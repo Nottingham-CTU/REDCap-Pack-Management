@@ -12,11 +12,15 @@
 		}
 	],
 	"framework-version" : 12,
-	"compatibility" : { "redcap-version-min" : "13.1.28" },
+	"compatibility" : {
+		"redcap-version-min" : "13.1.28",
+		"php-version-min" : "8.0.0",
+		"php-version-max" : "8.99.99"
+	},
 	"links" : {
 		"project" : [
 			{
-				"name" : "Pack Management",
+				"name" : "Pack Management: Configure Categories",
 				"tt_name" : "module_link_config",
 				"icon" : "fas fa-boxes-stacked",
 				"url" : "configure.php"

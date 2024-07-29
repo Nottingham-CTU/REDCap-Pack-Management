@@ -81,6 +81,7 @@ else
 			}
 			$extraFieldCount++;
 		}
+		ksort( $infoCategory['extrafields'] );
 		// Parse the role lists.
 		foreach ( [ 'roles_view', 'roles_dags', 'roles_invalid', 'roles_assign',
 		            'roles_add', 'roles_edit' ] as $fieldName )
@@ -104,11 +105,14 @@ else
 		// Check that there is not another minimization pack category already enabled for this
 		// project. Multiple non-enabled minimization pack categories can co-exist but only one
 		// can be enabled at any time.
-		if ( $module->query( 'SELECT 1 FROM redcap_external_module_settings WHERE `key` LIKE ? ' .
-		                     'AND json_contains( `value`, \'true\', \'$.enabled\' ) AND ' .
-		                     'json_contains( `value`, \'"M"\', \'$.trigger\' ) AND ' .
-		                     'NOT json_contains( `value`, ?, \'$.id\' )',
-		                     [ 'p' . $module->getProjectId() . '-packcat-%',
+		if ( $module->query( 'SELECT 1 FROM redcap_external_module_settings ems JOIN ' .
+		                     'redcap_external_modules em ON ems.external_module_id = ' .
+		                     'em.external_module_id WHERE em.directory_prefix = ? AND ems.`key` ' .
+		                     'LIKE ? AND json_contains( ems.`value`, \'true\', \'$.enabled\' ) ' .
+		                     'AND json_contains( ems.`value`, \'"M"\', \'$.trigger\' ) ' .
+		                     'AND NOT json_contains( ems.`value`, ?, \'$.id\' )',
+		                     [ $module->getModuleDirectoryBaseName(),
+		                       'p' . $module->getProjectId() . '-packcat-%',
 		                       '"' . $infoCategory['id'] . '"' ] )->fetch_assoc() )
 		{
 			$hasError = true;
@@ -469,6 +473,23 @@ foreach ( [ 'text' => preg_replace( '/\\(.*?\\)/', '', $GLOBALS['lang']['design_
    } )
    vNewRows.appendTo('[data-section="additional-fields"]')
  } )
+ var vExtraFields = $('<div></div>').html('<?php
+echo $module->escape( json_encode( $infoCategory['extrafields'] ) ); ?>').text()
+ vExtraFields = JSON.parse( vExtraFields )
+ var vExtraFieldNames = Object.keys(vExtraFields)
+ for ( var i = 0; i < vExtraFieldNames.length; i++ )
+ {
+   if ( i > 0 )
+   {
+     $('#addextrafield').click()
+   }
+   var vExtraField = vExtraFields[ vExtraFieldNames[i] ]
+   $('[name="f' + (i + 1) + '_name"]').val( vExtraFieldNames[i] )
+   $('[name="f' + (i + 1) + '_label"]').val( vExtraField.label )
+   $('[name="f' + (i + 1) + '_type"]').val( vExtraField.type )
+   $('[name="f' + (i + 1) + '_field"]').val( vExtraField.field )
+   $('[name="f' + (i + 1) + '_name"]').change()
+ }
 </script>
 <?php
 
