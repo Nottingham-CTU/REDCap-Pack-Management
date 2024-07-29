@@ -24,6 +24,12 @@
 				"tt_name" : "module_link_config",
 				"icon" : "fas fa-boxes-stacked",
 				"url" : "configure.php"
+			},
+			{
+				"name" : "Pack Management: Add/Edit Packs",
+				"tt_name" : "module_link_packs",
+				"icon" : "fas fa-boxes-stacked",
+				"url" : "packs.php"
 			}
 		]
 	}

@@ -8,9 +8,17 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 	// Determine whether link to module configuration is shown.
-	function redcap_module_link_check_display( $project_id, $link )
+	public function redcap_module_link_check_display( $project_id, $link )
 	{
 		if ( $this->canConfigure() )
+		{
+			return $link;
+		}
+		if ( $link['tt_name'] == 'module_link_config' )
+		{
+			return null;
+		}
+		if ( $this->canSeePacks() )
 		{
 			return $link;
 		}
@@ -19,7 +27,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 	// Always hide the button for the default REDCap module configuration interface.
-	function redcap_module_configure_button_display()
+	public function redcap_module_configure_button_display()
 	{
 		return ( $this->getProjectId() === null ) ? true : null;
 	}
@@ -49,6 +57,46 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		if ( ! $specificRights && $userRights['design'] == '1' )
 		{
 			return true;
+		}
+		return false;
+	}
+
+
+
+	// Check if the current user can see (some of) the packs for the project.
+	public function canSeePacks()
+	{
+		$user = $this->getUser();
+		if ( ! is_object( $user ) )
+		{
+			return false;
+		}
+		if ( $this->canConfigure() )
+		{
+			return true;
+		}
+		$userRights = $user->getRights();
+		if ( $userRights === null || $userRights['role_id'] === null )
+		{
+			return false;
+		}
+		$roleName = $userRights['role_name'];
+		$moduleName = $this->getModuleDirectoryBaseName();
+		$queryRoles = $this->query( 'SELECT jtbl.role FROM redcap_external_module_settings ems ' .
+		                            'JOIN redcap_external_modules em ON ems.external_module_id = ' .
+		                            'em.external_module_id JOIN JSON_TABLE( JSON_EXTRACT( ' .
+		                            'ems.value, \'$.roles_view[*]\', \'$.roles_dags[*]\', ' .
+		                            '\'$.roles_invalid[*]\', \'$.roles_assign[*]\', ' .
+		                            '\'$.roles_add[*]\', \'$.roles_edit\' ), \'$[*]\' ' .
+		                            'COLUMNS ( `role` TEXT PATH \'$\' ) ) jtbl ' .
+		                            'WHERE em.directory_prefix = ? AND ems.key LIKE ?',
+		                            [ $moduleName, 'p' . $this->getProjectId() . '-packcat-%' ] );
+		while ( $infoRole = $queryRoles->fetch_assoc() )
+		{
+			if ( $infoRole['role'] == $roleName )
+			{
+				return true;
+			}
 		}
 		return false;
 	}
