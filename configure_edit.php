@@ -316,10 +316,7 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
      <select name="f1_type">
       <option value=""><?php echo $module->tt('select'); ?></option>
 <?php
-foreach ( [ 'text' => preg_replace( '/\\(.*?\\)/', '', $GLOBALS['lang']['design_634'] ),
-            'date' => $GLOBALS['lang']['global_18'], 'datetime' => $GLOBALS['lang']['global_55'],
-            'time' => $GLOBALS['lang']['global_13'], 'integer' => $GLOBALS['lang']['design_86'] ]
-          as $typeCode => $typeLabel )
+foreach ( $module->getPackFieldTypes() as $typeCode => $typeLabel )
 {
 ?>
       <option value="<?php echo $typeCode; ?>"><?php echo $typeLabel; ?></option>

@@ -124,6 +124,26 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Get the list of pack field types, or the description of a specified type.
+	public function getPackFieldTypes( $type = null )
+	{
+		$listFieldTypes =
+			[ 'text' => preg_replace( '/\\(.*?\\)/', '', $GLOBALS['lang']['design_634'] ),
+			  'date' => $GLOBALS['lang']['global_18'], 'datetime' => $GLOBALS['lang']['global_55'],
+			  'time' => $GLOBALS['lang']['global_13'], 'integer' => $GLOBALS['lang']['design_86'] ];
+		if ( $type !== null )
+		{
+			if ( isset( $listFieldTypes[ $type ] ) )
+			{
+				return $listFieldTypes[ $type ];
+			}
+			return null;
+		}
+		return $listFieldTypes;
+	}
+
+
+
 	// Get the project fields which can be used for storing pack fields into the records.
 	public function getProjectFields( $type = '' )
 	{
