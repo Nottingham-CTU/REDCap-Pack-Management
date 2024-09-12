@@ -22,10 +22,11 @@ if ( $new )
 	}
 	$infoCategory = [ 'id' => $_POST['cat_id'] ?? '', 'enabled' => true, 'trigger' => '',
 	                  'form' => '', 'logic' => '', 'nominim' => '', 'dags' => false,
-	                  'blocks' => false, 'expire' => true, 'packfield' => '', 'datefield' => '',
-	                  'countfield' => '', 'valuefield' => '', 'extrafields' => [],
-	                  'roles_view' => [], 'roles_dags' => [], 'roles_invalid' => [],
-	                  'roles_assign' => [], 'roles_add' => [], 'roles_edit' => [] ];
+	                  'dags_rcpt' => false, 'blocks' => false, 'expire' => true, 'expire_buf' => 0,
+	                  'packfield' => '', 'datefield' => '', 'countfield' => '', 'valuefield' => '',
+	                  'extrafields' => [], 'roles_view' => [], 'roles_dags' => [],
+	                  'roles_invalid' => [], 'roles_assign' => [], 'roles_add' => [],
+	                  'roles_edit' => [] ];
 }
 else
 {
@@ -49,8 +50,8 @@ else
 	{
 		// Build the category object from the form submission, begin with the standard options.
 		$infoCategory = [ 'id' => $_GET['cat_id'] ];
-		foreach ( [ 'enabled', 'trigger', 'form', 'logic', 'nominim', 'dags', 'blocks', 'expire',
-		            'packfield', 'datefield', 'countfield', 'valuefield' ] as $fieldName )
+		foreach ( [ 'enabled', 'trigger', 'form', 'logic', 'nominim', 'dags', 'dags_rcpt', 'blocks',
+		            'expire', 'packfield', 'datefield', 'countfield', 'valuefield' ] as $fieldName )
 		{
 			if ( in_array( $fieldName, [ 'enabled', 'dags', 'blocks', 'expire' ] ) )
 			{
@@ -243,6 +244,17 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
      </select>
     </td>
    </tr>
+   <tr data-assign-dags="1">
+    <td><?php echo $module->tt('packs_issue_dags_rcpt'); ?></td>
+    <td>
+     <select name="dags_rcpt" required>
+      <option value="1"<?php echo $infoCategory['dags_rcpt'] ? ' selected' : ''; ?>><?php
+                                                    echo $module->tt('opt_yes'); ?></option>
+      <option value="0"<?php echo ! $infoCategory['dags_rcpt'] ? ' selected' : ''; ?>><?php
+                                                    echo $module->tt('opt_no'); ?></option>
+     </select>
+    </td>
+   </tr>
    <tr>
     <td><?php echo $module->tt('packs_group_blocks'); ?>*</td>
     <td>
@@ -430,6 +442,8 @@ foreach ( $module->getPackFieldTypes() as $typeCode => $typeLabel )
  {
    var vVal = $(this).val()
    $('[data-assign-dags]').css('display', vVal == '1' ? '' : 'none')
+   $('[data-assign-dags] [' + ( vVal == '1' ? 'data-' : '' ) + 'required]')
+     .attr('data-required', ( vVal == '1' ? null : '1' )).prop('required', vVal == '1')
  } )
  $('[name="dags"]').change()
  var vFuncAP = function()
