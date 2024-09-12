@@ -195,6 +195,25 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Make the SQL query clause to get a packlist table.
+	public function makePacklistSQL( $source )
+	{
+		return ' JSON_TABLE(' . $source . ',\'$[*]\' ' .
+		       'COLUMNS( id TEXT PATH \'$.id\', ' .
+		                'value TEXT PATH \'$.value\' DEFAULT \'""\' ON EMPTY, ' .
+		                'block_id TEXT PATH \'$.block_id\' DEFAULT \'""\' ON EMPTY, ' .
+		                'expiry DATETIME PATH \'$.expiry\', ' .
+		                'extrafields JSON PATH \'$.extrafields\' DEFAULT \'[]\' ON EMPTY, ' .
+		                'dag INT PATH \'$.dag\', ' .
+		                'dag_rcpt TINYINT PATH \'$.dag_rcpt\' DEFAULT \'true\' ON EMPTY, ' .
+		                'assigned TINYINT PATH \'$.assigned\' DEFAULT \'false\' ON EMPTY, ' .
+		                'invalid TINYINT PATH \'$.invallid\' DEFAULT \'false\' ON EMPTY, ' .
+		                'invalid_desc TEXT PATH \'$.invalid_desc\' DEFAULT \'""\' ON EMPTY ' .
+		       ') ) AS packlist ';
+	}
+
+
+
 	// CSS style for Pack Management pages.
 	public function writeStyle()
 	{
@@ -257,6 +276,24 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			{
 				padding: 3px;
 				border: solid 1px #000;
+			}
+			.mod-packmgmt-okmsg
+			{
+				max-width: 800px;
+				color: #0a3622;
+				background-color: #d1e7dd;
+				border: solid 1px #a3cfbb;
+				border-radius: 0.375rem;
+				padding: 1rem;
+			}
+			.mod-packmgmt-errmsg
+			{
+				max-width: 800px;
+				color: #58151c;
+				background-color: #f8d7da;
+				border: solid 1px #f1aeb5;
+				border-radius: 0.375rem;
+				padding: 1rem;
 			}
 			';
 		echo '<script type="text/javascript">',
