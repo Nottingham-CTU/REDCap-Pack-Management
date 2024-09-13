@@ -52,7 +52,12 @@ $queryPacks = $module->query( 'SELECT id, block_id, expiry, dag, dag_rcpt, assig
 $listPacks = [];
 while ( $infoPack = $queryPacks->fetch_assoc() )
 {
-	// TODO: If packs are assigned to DAGs and user is in a DAG, show only packs in that DAG.
+	// If packs are assigned to DAGs and user is in a DAG, only show packs in that DAG.
+	if ( $infoCategory['dags'] && $userRights['group_id'] != '' &&
+	     $userRights['group_id'] != $infoPack['dag'] )
+	{
+		continue;
+	}
 	$listPacks[] = $infoPack;
 }
 
@@ -138,7 +143,7 @@ foreach ( $listPacks as $infoPack )
 	if ( $infoCategory['expiry'] )
 	{
 ?>
-  <td><?php echo $module->escape( $infoPack['expiry'] ); ?></td>
+  <td><?php echo $module->escape( \DateTimeRC::format_ts_from_ymd( $infoPack['expiry'] ) ); ?></td>
 <?php
 	}
 ?>
