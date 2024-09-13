@@ -129,12 +129,22 @@ else
 				$module->setSystemSetting( 'p' . $module->getProjectId() . '-packlist-' .
 				                           $infoCategory['id'], '[]' );
 			}
+			$logEvent = 'CAT_UPDATE';
 			if ( $module->getSystemSetting( 'p' . $module->getProjectId() . '-packlog-' .
 			                                $infoCategory['id'] ) === null )
 			{
+				$logEvent = 'CAT_CREATE';
 				$module->setSystemSetting( 'p' . $module->getProjectId() . '-packlog-' .
 				                           $infoCategory['id'], '[]' );
 			}
+			$infoLog = [ 'event' => $logEvent, 'user' => USERID, 'time' => date( 'Y-m-d H:i:s' ),
+			             'data' => $infoCategory ];
+			$module->query( 'UPDATE redcap_external_module_settings SET `value` = ' .
+			                'JSON_MERGE_PRESERVE(`value`,?) WHERE external_module_id = ' .
+			                '(SELECT external_module_id FROM redcap_external_modules WHERE ' .
+			                'directory_prefix = ?) AND `key` = ?',
+			                [ json_encode( [$infoLog] ), $module->getModuleDirectoryBaseName(),
+			                 'p' . $module->getProjectId() . '-packlog-' . $infoCategory['id'] ] );
 			$module->dbReleaseLock();
 			header( 'Location: ' . $module->getUrl( 'configure.php' ) );
 			exit;
