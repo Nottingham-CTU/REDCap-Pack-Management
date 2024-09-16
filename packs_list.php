@@ -54,6 +54,11 @@ $queryPacks = $module->query( 'SELECT id, block_id, expiry, dag, dag_rcpt, assig
                              [ $module->getModuleDirectoryBaseName(),
                               'p' . $module->getProjectId() . '-packlist-' . $infoCategory['id'] ]);
 $listPacks = [];
+$totalPacks = 0;
+$availablePacks = 0;
+$assignedPacks = 0;
+$invalidPacks = 0;
+$expiredPacks = 0;
 while ( $infoPack = $queryPacks->fetch_assoc() )
 {
 	// If packs are assigned to DAGs and user is in a DAG, only show packs in that DAG.
@@ -63,6 +68,23 @@ while ( $infoPack = $queryPacks->fetch_assoc() )
 		continue;
 	}
 	$listPacks[] = $infoPack;
+	$totalPacks++;
+	if ( $infoPack['assigned'] )
+	{
+		$assignedPacks++;
+	}
+	elseif ( $infoPack['invalid'] )
+	{
+		$invalidPacks++;
+	}
+	elseif ( $infoPack['expiry'] != '' && $infoPack['expiry'] < date('Y-m-d H:i:s') )
+	{
+		$expiredPacks++;
+	}
+	else
+	{
+		$availablePacks++;
+	}
 }
 
 
@@ -109,6 +131,15 @@ if ( ! empty( $_POST ) )
  <?php echo $module->tt('view_packs'), ' &#8211; ', $module->escape( $infoCategory['id'] ), "\n"; ?>
 </p>
 
+<p>
+ <?php echo $module->tt('total_packs'), ' ', $totalPacks, '<br>',
+            $module->tt('available_packs'), ' ', $availablePacks, '<br>',
+            $module->tt('assigned_packs'), ' ', $assignedPacks,
+            $invalidPacks == 0 ? '' : ( '<br>' . $module->tt('invalid_packs') . $invalidPacks ),
+            $expiredPacks == 0 ? '' : ( '<br>' . $module->tt('expired_packs') . $expiredPacks ); ?>
+
+</p>
+
 <table class="mod-packmgmt-listtable">
  <tr>
   <th style="width:45px"></th>
@@ -144,9 +175,21 @@ foreach ( $listPacks as $infoPack )
    <input type="checkbox" name="pack_id" data-pack-chkbx="<?php echo ++$row; ?>"
              value="<?php echo $module->escape( $infoPack['id'] ); ?>"
              data-block-id="<?php echo $module->escape( $infoPack['block_id'] ); ?>"
+             data-assigned="<?php echo $infoPack['assigned'] ? 'true' : 'false'; ?>"
+             data-invalid="<?php echo $infoPack['invalid'] ? 'true' : 'false'; ?>"
+             data-dag="<?php echo $infoPack['dag'] ?? ''; ?>"
              title="<?php echo $module->tt('tooltip_chkbx_shift'); ?>">
   </td>
-  <td><?php echo $module->escape( $infoPack['id'] ); ?></td>
+  <td>
+   <?php echo $module->escape( $infoPack['id'] ), "\n"; ?>
+   <span style="float:right">
+    <?php echo $infoPack['assigned'] ? ( '<i class="far fa-square-check" title="' .
+                                         $module->tt('tooltip_pack_assigned') . '"></i>' ) : ''; ?>
+    <?php echo $infoPack['invalid'] ? ( '<i class="fas fa-ban" title="' .
+                                        $module->escape( $infoPack['invalid_desc'] ) .
+                                        '"></i>&nbsp;' ) : '', "\n"; ?>
+   </span>
+  </td>
 <?php
 	if ( $infoCategory['blocks'] )
 	{
@@ -174,6 +217,87 @@ foreach ( $listPacks as $infoPack )
 }
 ?>
 </table>
+
+<p>&nbsp;</p>
+
+<?php
+if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
+                        $infoCategory['dags'] && $userRights['group_id'] == '' ) ||
+                      in_array( $roleName, $infoCategory['roles_invalid'] ) ||
+                      in_array( $roleName, $infoCategory['roles_assign'] ) )
+{
+?>
+<p style="font-size:1.3em">
+ <?php echo $module->tt('with_selected_packs'), "\n"; ?>
+</p>
+<?php
+	if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
+	                        $infoCategory['dags'] && $userRights['group_id'] == '' ) )
+	{
+?>
+<form method="post" class="packmgmt-packissue">
+ <table class="mod-packmgmt-formtable" style="margin-bottom:5px">
+  <tr>
+   <th colspan="2"><?php echo $module->tt('issue_unissue_packs'); ?></th>
+  </tr>
+  <tr>
+   <td colspan="2" class="errmsg" style="color:#58151c;display:none;text-align:left">
+    <?php echo $module->tt('issue_unissue_packs_error'), "\n"; ?>
+   </td>
+  </tr>
+  <tr>
+   <td><?php echo $module->tt('dag'); ?></td>
+   <td>
+    <select name="">
+     <option value=""><?php echo $module->tt('opt_none'); ?></option>
+<?php
+		foreach ( $listDAGs as $dagID => $dagName )
+		{
+?>
+     <option value="<?php echo $dagID; ?>"><?php echo $module->escape( $dagName ); ?></option>
+<?php
+		}
+?>
+    </select>
+   </td>
+  </tr>
+  <tr>
+   <td></td>
+   <td>
+    <input type="hidden" name="action" value="issue">
+    <input type="submit" value="<?php echo $module->tt('save'); ?>">
+   </td>
+  </tr>
+ </table>
+</form>
+<?php
+	}
+	if ( $canConfigure || in_array( $roleName, $infoCategory['roles_invalid'] ) )
+	{
+?>
+<form method="post" class="packmgmt-packinvalid">
+ <table class="mod-packmgmt-formtable" style="margin-bottom:5px">
+  <tr>
+   <th colspan="2"><?php echo $module->tt('mark_unmark_packs_invalid'); ?></th>
+  </tr>
+ </table>
+</form>
+<?php
+	}
+	if ( $canConfigure || in_array( $roleName, $infoCategory['roles_assign'] ) )
+	{
+?>
+<form method="post" class="packmgmt-packassign">
+ <table class="mod-packmgmt-formtable" style="margin-bottom:5px">
+  <tr>
+   <th colspan="2"><?php echo $module->tt('assign_reassign_packs'); ?></th>
+  </tr>
+ </table>
+</form>
+<?php
+	}
+}
+?>
 
 <script type="text/javascript">
 $(function()
@@ -204,6 +328,31 @@ $(function()
     else if ( ! vMultiCheck )
     {
       vLastChecked = event.shiftKey ? ( vCB.attr('data-pack-chkbx') - 0 ) : 0
+    }
+    if ( $('.packmgmt-packissue').length > 0 )
+    {
+      if ( $('[data-pack-chkbx]:checked').map(function(){return $(this).attr('data-block-id')})
+           .filter($('[data-pack-chkbx]:not(:checked)').map(function(){return $(this)
+           .attr('data-block-id')})).get().length == 0 &&
+           [...new Set($('[data-pack-chkbx]').map(function(){return $(this).attr('data-dag')})
+           .get())].length == 1 )
+      {
+        $('.packmgmt-packissue .errmsg').css('display','none')
+        $('.packmgmt-packissue input, .packmgmt-packissue select').prop('disabled',false)
+      }
+      else
+      {
+        $('.packmgmt-packissue .errmsg').css('display','')
+        $('.packmgmt-packissue input, .packmgmt-packissue select').prop('disabled',true)
+      }
+    }
+    if ( $('.packmgmt-packinvalid').length > 0 )
+    {
+      //
+    }
+    if ( $('.packmgmt-packassign').length > 0 )
+    {
+      //
     }
   })
 })
