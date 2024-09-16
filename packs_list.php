@@ -41,6 +41,10 @@ if ( ! $canConfigure && ! in_array( $roleName, $infoCategory['roles_view'] ) &&
 }
 
 
+// Get the project DAGs.
+$listDAGs = \REDCap::getGroupNames();
+
+
 // Get the full list of packs in the category.
 $queryPacks = $module->query( 'SELECT id, block_id, expiry, dag, dag_rcpt, assigned, invalid ' .
                               'FROM redcap_external_module_settings ems, redcap_external_modules ' .
@@ -101,6 +105,10 @@ if ( ! empty( $_POST ) )
 }
 ?>
 
+<p style="font-size:1.3em">
+ <?php echo $module->tt('view_packs'), ' &#8211; ', $module->escape( $infoCategory['id'] ), "\n"; ?>
+</p>
+
 <table class="mod-packmgmt-listtable">
  <tr>
   <th style="width:45px"></th>
@@ -110,6 +118,12 @@ if ( $infoCategory['blocks'] )
 {
 ?>
   <th><?php echo $module->tt('packfield_block_id'); ?></th>
+<?php
+}
+if ( $infoCategory['dags'] && $userRights['group_id'] == '' )
+{
+?>
+  <th><?php echo $module->tt('dag'); ?></th>
 <?php
 }
 if ( $infoCategory['expire'] )
@@ -140,7 +154,15 @@ foreach ( $listPacks as $infoPack )
   <td><?php echo $module->escape( $infoPack['block_id'] ); ?></td>
 <?php
 	}
-	if ( $infoCategory['expiry'] )
+	if ( $infoCategory['dags'] && $userRights['group_id'] == '' )
+	{
+?>
+  <td><?php echo $infoPack['dag'] == '' ? '&#8212;'
+                                        : $module->escape( $listDAGs[ $infoPack['dag'] ] ),
+                 $infoPack['dag_rcpt'] ? '' : ' <i class="fas fa-truck"></i>'; ?></td>
+<?php
+	}
+	if ( $infoCategory['expire'] )
 	{
 ?>
   <td><?php echo $module->escape( \DateTimeRC::format_ts_from_ymd( $infoPack['expiry'] ) ); ?></td>
