@@ -177,7 +177,7 @@ foreach ( $listPacks as $infoPack )
              data-block-id="<?php echo $module->escape( $infoPack['block_id'] ); ?>"
              data-assigned="<?php echo $infoPack['assigned'] ? 'true' : 'false'; ?>"
              data-invalid="<?php echo $infoPack['invalid'] ? 'true' : 'false'; ?>"
-             data-dag="<?php echo $infoPack['dag'] ?? ''; ?>"
+             data-dag="<?php echo $module->escape( $infoPack['dag'] ?? '' ); ?>"
              title="<?php echo $module->tt('tooltip_chkbx_shift'); ?>">
   </td>
   <td>
@@ -231,8 +231,8 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
  <?php echo $module->tt('with_selected_packs'), "\n"; ?>
 </p>
 <?php
-	if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
-	                        $infoCategory['dags'] && $userRights['group_id'] == '' ) )
+	if ( ( $canConfigure || in_array( $roleName, $infoCategory['roles_dags'] ) ) &&
+	     $infoCategory['dags'] && $userRights['group_id'] == '' )
 	{
 ?>
 <form method="post" class="packmgmt-packissue">
@@ -242,7 +242,8 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
   </tr>
   <tr>
    <td colspan="2" class="errmsg" style="color:#58151c;display:none;text-align:left">
-    <?php echo $module->tt('issue_unissue_packs_error'), "\n"; ?>
+    <?php echo $module->tt( 'issue_unissue_packs_error' .
+                            ( $infoCategory['blocks'] ? '_wb' : '_nb' ) ), "\n"; ?>
    </td>
   </tr>
   <tr>
@@ -279,6 +280,24 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
  <table class="mod-packmgmt-formtable" style="margin-bottom:5px">
   <tr>
    <th colspan="2"><?php echo $module->tt('mark_unmark_packs_invalid'); ?></th>
+  <tr>
+   <td colspan="2" class="errmsg" style="color:#58151c;display:none;text-align:left">
+    <?php echo $module->tt('mark_unmark_packs_invalid_error'), "\n"; ?>
+   </td>
+  </tr>
+  <tr>
+   <td class="desclbl"><?php echo $module->tt('mark_invalid_reason'); ?></td>
+   <td>
+    <textarea name="invalid_desc"></textarea>
+   </td>
+  </tr>
+  <tr>
+   <td></td>
+   <td>
+    <input type="hidden" name="action" value="invalid">
+    <input type="submit" value="<?php echo $module->tt('save'); ?>">
+   </td>
+  </tr>
   </tr>
  </table>
 </form>
@@ -331,9 +350,11 @@ $(function()
     }
     if ( $('.packmgmt-packissue').length > 0 )
     {
-      if ( $('[data-pack-chkbx]:checked').map(function(){return $(this).attr('data-block-id')})
-           .filter($('[data-pack-chkbx]:not(:checked)').map(function(){return $(this)
-           .attr('data-block-id')})).get().length == 0 &&
+      if ( ( [...new Set($('[data-pack-chkbx]').map(function(){return $(this)
+              .attr('data-block-id')}).get())].length == 1 ||
+             $('[data-pack-chkbx]:checked').map(function(){return $(this).attr('data-block-id')})
+             .filter($('[data-pack-chkbx]:not(:checked)').map(function(){return $(this)
+             .attr('data-block-id')})).get().length == 0 ) &&
            [...new Set($('[data-pack-chkbx]').map(function(){return $(this).attr('data-dag')})
            .get())].length == 1 )
       {
@@ -348,7 +369,24 @@ $(function()
     }
     if ( $('.packmgmt-packinvalid').length > 0 )
     {
-      //
+      $('.packmgmt-packinvalid .desclbl').text('<?php echo $module->tt('mark_invalid_reason'); ?>')
+      if ( $('[data-assigned="true"]:checked').length == 0 &&
+           ( $('[data-invalid="true"]:checked').length == 0 ||
+             $('[data-invalid="false"]:checked').length == 0 ) )
+      {
+        $('.packmgmt-packinvalid .errmsg').css('display','none')
+        $('.packmgmt-packinvalid input, .packmgmt-packinvalid textarea').prop('disabled',false)
+        if ( $('[data-invalid="true"]:checked').length > 0 )
+        {
+          $('.packmgmt-packinvalid .desclbl')
+          .text('<?php echo $module->tt('unmark_invalid_reason'); ?>')
+        }
+      }
+      else
+      {
+        $('.packmgmt-packinvalid .errmsg').css('display','')
+        $('.packmgmt-packinvalid input, .packmgmt-packinvalid textarea').prop('disabled',true)
+      }
     }
     if ( $('.packmgmt-packassign').length > 0 )
     {
