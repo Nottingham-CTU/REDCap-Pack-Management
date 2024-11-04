@@ -34,6 +34,184 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Assign a minimization pack as requested by the Minimization module.
+	public function assignMinimPack( $recordID, $listMinimCodes, $minimField = '' )
+	{
+		$this->dbGetLock();
+		// Get pack category for minimization field.
+		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS ' .
+		                          'id, JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) AS ' .
+		                          'packfield, JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.nominim\')) ' .
+		                          'AS nominim FROM redcap_external_module_settings ems JOIN ' .
+		                          'redcap_external_modules em ON ems.external_module_id = ' .
+		                          'em.external_module_id WHERE em.directory_prefix = ? AND ' .
+		                          'ems.`key` LIKE ? AND ' .
+		                          'JSON_CONTAINS(`value`,\'"M"\',\'$.trigger\') ' .
+		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')' .
+		                          'AND JSON_CONTAINS(`value`,?,\'$.valuefield\')',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $this->getProjectId() . '-packcat-%',
+		                            json_encode( $minimField ) ] );
+		$infoCat = $queryCat->fetch_assoc();
+		if ( empty( $infoCat ) )
+		{
+			$this->dbReleaseLock();
+			return false;
+		}
+		// Assign pack
+		$infoPack = false;
+		$chosenCode = null;
+		foreach ( $listMinimCodes as $minimCode )
+		{
+			$infoPack = $this->choosePack( $infoCat['id'], $recordID, $minimCode );
+			$chosenCode = $minimCode;
+			if ( $infoPack !== false || $infoCat['nominim'] != 'S' )
+			{
+				break;
+			}
+		}
+		$this->dbReleaseLock();
+		if ( $infoPack === false )
+		{
+			return false;
+		}
+		// Return the data to the Minimization module.
+		$infoRando = [ 'packID' => $infoPack[ $infoCat['packfield'] ], 'randoCode' => $chosenCode ];
+		unset( $infoPack[ $infoCat['packfield'] ] );
+		$infoRando['extraData'] = $infoPack;
+		return $infoRando;
+	}
+
+
+
+	// Choose a pack from the specified pack category and mark it as assigned.
+	public function choosePack( $catID, $recordID, $value = null )
+	{
+		$this->dbGetLock();
+		// Get the pack category details.
+		$queryCat = $this->query( 'SELECT ems.`value` AS category ' .
+		                          'FROM redcap_external_module_settings ems JOIN ' .
+		                          'redcap_external_modules em ON ems.external_module_id = ' .
+		                          'em.external_module_id WHERE em.directory_prefix = ? AND ' .
+		                          'ems.`key` = ? AND ' .
+		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $this->getProjectId() . '-packcat-' . $catID ] );
+		$infoCat = $queryCat->fetch_assoc();
+		if ( count( $infoCat ) != 1 )
+		{
+			$this->dbReleaseLock();
+			return false;
+		}
+		$infoCat = json_decode( $infoCat['category'], true );
+		$paramsPacks = [ $module->getModuleDirectoryBaseName(),
+		                 'p' . $module->getProjectId() . '-packlist-' . $catID ];
+		// If packs are assigned to DAGs, prepare to filter the list of packs by DAG.
+		$sqlPacks = '';
+		if ( $infoCat['dags'] )
+		{
+			// Get the record DAG.
+			$queryDAG = $this->query( 'SELECT rd.`value` AS dag FROM ' .
+			                          $this->getDataTable( $this->getProjectId() ) .
+			                          'WHERE project_id = ? AND record = ? AND field_name = ?',
+			                          [ $this->getProjectId(), $recordID, '__GROUPID__' ] );
+			$infoDAG = $queryDAG->fetch_assoc();
+			if ( empty( $infoDAG ) )
+			{
+				// Record not in a DAG, cannot assign pack.
+				$this->dbReleaseLock();
+				return false;
+			}
+			$sqlPacks .= ' AND packlist.dag = ? AND packlist.dag_rcpt = 1';
+			$paramsPacks[] = $infoDAG['dag'];
+		}
+		// If packs expire, prepare to exclude expired packs.
+		if ( $infoCat['expire'] )
+		{
+			$now = date( 'Y-m-d H:i:s', time() + 600 ); // Must be more than 10min until expiry.
+			$sqlPacks .= ' AND packlist.expiry > ?';
+			$paramsPacks[] = $now;
+		}
+		// If the pack must match a value, prepare to filter by it.
+		if ( $value !== null )
+		{
+			$sqlPacks2 .= ' AND packlist.value = ?';
+			$paramsPacks[] = $value;
+		}
+		// Get the available packs, filtered as required.  Up to 4 packs are returned,
+		// those closest to expiry and from partially used blocks are preferred.
+		$queryPacks = $module->query( 'WITH packs AS (' .
+		                              'SELECT id, block_id, value, expiry, extrafields, assigned ' .
+		                              'FROM redcap_external_module_settings ems, ' .
+		                              'redcap_external_modules em, ' .
+		                              $module->makePacklistSQL('ems.value') .
+		                              'WHERE em.external_module_id = ems.external_module_id ' .
+		                              'AND em.directory_prefix = ? AND ems.key = ?' .
+		                              'AND packlist.invalid = 0' . $sqlPacks . ') ' .
+		                              'SELECT id, extrafields, (SELECT count(*) FROM packs p ' .
+		                              'WHERE p.assigned = 0) count FROM packs WHERE assigned = 0 ' .
+		                              $sqlPacks2 . ' ORDER BY expiry, if((SELECT count(*) ' .
+		                              'FROM packs p WHERE packs.block_id = p.block_id ' .
+		                              'AND p.assigned = 1)>0,0,1), (SELECT count(*) ' .
+		                              'FROM packs p WHERE packs.block_id = p.block_id ' .
+		                              'AND p.assigned = 0) LIMIT 4',
+		                              $paramsPacks );
+		// Pick a pack.
+		$infoPack = null;
+		while ( $nextPack = $queryPacks->fetch_assoc() )
+		{
+			// Use the first pack returned 50% of the time, second pack 25% etc.
+			$infoPack = $nextPack;
+			if ( random_int( 0, 1 ) == 0 )
+			{
+				break;
+			}
+		}
+		if ( $infoPack === null )
+		{
+			// No pack available.
+			$this->dbReleaseLock();
+			return false;
+		}
+		// Set the pack as assigned.
+		$this->updatePackProperty( $this->getProjectId(), $catID,
+		                           $infoPack['id'], 'assigned', true );
+		// Write the pack assignment to the log.
+		$infoLog = [ 'event' => 'PACK_ASSIGN', 'user' => ( defined('USERID') ? USERID : '' ),
+		             'time' => date( 'Y-m-d H:i:s' ),
+		             'data' => [ 'id' => $infoPack['id'], 'record' => $recordID ] ];
+		$this->query( 'UPDATE redcap_external_module_settings SET `value` = ' .
+		                'JSON_MERGE_PRESERVE(`value`,?) WHERE external_module_id = ' .
+		                '(SELECT external_module_id FROM redcap_external_modules WHERE ' .
+		                'directory_prefix = ?) AND `key` = ?',
+		                [ json_encode( [$infoLog] ), $this->getModuleDirectoryBaseName(),
+		                 'p' . $this->getProjectId() . '-packlog-' . $infoCat['id'] ] );
+		$this->dbReleaseLock();
+		// Return the fields/values to be updated on the record.
+		$infoValues = [ $infoCat['packfield'] => $infoPack['id'] ];
+		if ( $infoCat['datefield'] != '' )
+		{
+			$infoValues[ $infoCat['datefield'] ] = date( 'Y-m-d H:i:s' );
+		}
+		if ( $infoCat['countfield'] != '' )
+		{
+			$infoValues[ $infoCat['countfield'] ] = $infoPack['count'] - 1;
+		}
+		$listCatExtraFields = json_decode( $infoCat['extrafields'], true );
+		$listPackExtraFields = json_decode( $infoPack['extrafields'], true );
+		foreach ( $listCatExtraFields as $extraFieldName => $infoCatExtraField )
+		{
+			if ( $infoCatExtraField['field'] != '' )
+			{
+				$infoValues[ $infoCatExtraField['field'] ] =
+						$listPackExtraFields[ $extraFieldName ];
+			}
+		}
+		return $infoValues;
+	}
+
+
+
 	// Check if the current user can configure the module settings for the project.
 	public function canConfigure()
 	{
@@ -87,7 +265,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                            'em.external_module_id JOIN JSON_TABLE( JSON_EXTRACT( ' .
 		                            'ems.value, \'$.roles_view[*]\', \'$.roles_dags[*]\', ' .
 		                            '\'$.roles_invalid[*]\', \'$.roles_assign[*]\', ' .
-		                            '\'$.roles_add[*]\', \'$.roles_edit\' ), \'$[*]\' ' .
+		                            '\'$.roles_add[*]\', \'$.roles_edit[*]\' ), \'$[*]\' ' .
 		                            'COLUMNS ( `role` TEXT PATH \'$\' ) ) jtbl ' .
 		                            'WHERE em.directory_prefix = ? AND ems.key LIKE ?',
 		                            [ $moduleName, 'p' . $this->getProjectId() . '-packcat-%' ] );
@@ -112,6 +290,35 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 	public function dbReleaseLock()
 	{
 		$this->query( 'DO RELEASE_LOCK(?)', [ $GLOBALS['db'] . '.pack_management' ] );
+	}
+
+
+
+	// Get a project's redcap_data table.
+	public function getDataTable( $projectID )
+	{
+		return method_exists( '\REDCap', 'getDataTable' )
+		       ? \REDCap::getDataTable( $projectID ) : 'redcap_data';
+	}
+
+
+
+	// Get the minimization pack project field.
+	public function getMinimPackField( $minimField = '' )
+	{
+		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) AS ' .
+		                          'packfield FROM redcap_external_module_settings ems JOIN ' .
+		                          'redcap_external_modules em ON ems.external_module_id = ' .
+		                          'em.external_module_id WHERE em.directory_prefix = ? AND ' .
+		                          'ems.`key` LIKE ? AND ' .
+		                          'JSON_CONTAINS(`value`,\'"M"\',\'$.trigger\') ' .
+		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')' .
+		                          'AND JSON_CONTAINS(`value`,?,\'$.valuefield\')',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $this->getProjectId() . '-packcat-%',
+		                            json_encode( $minimField ) ] );
+		$infoCat = $queryCat->fetch_assoc()
+		return $infoCat ? $infoCat['packfield'] : null;
 	}
 
 
@@ -195,6 +402,22 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Check if a minimization pack category exists.
+	public function hasMinimPackCategory()
+	{
+		$queryCat = $this->query( 'SELECT 1 FROM redcap_external_module_settings ems JOIN ' .
+		                          'redcap_external_modules em ON ems.external_module_id = ' .
+		                          'em.external_module_id WHERE em.directory_prefix = ? AND ' .
+		                          'ems.`key` LIKE ? AND ' .
+		                          'JSON_CONTAINS(`value`,\'"M"\',\'$.trigger\') ' .
+		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $this->getProjectId() . '-packcat-%' ] );
+		return ( $queryCat->fetch_assoc() ) ? true : false;
+	}
+
+
+
 	// Make the SQL query clause to get a packlist table.
 	public function makePacklistSQL( $source )
 	{
@@ -207,9 +430,41 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                'dag INT PATH \'$.dag\', ' .
 		                'dag_rcpt TINYINT PATH \'$.dag_rcpt\' DEFAULT \'true\' ON EMPTY, ' .
 		                'assigned TINYINT PATH \'$.assigned\' DEFAULT \'false\' ON EMPTY, ' .
-		                'invalid TINYINT PATH \'$.invallid\' DEFAULT \'false\' ON EMPTY, ' .
+		                'invalid TINYINT PATH \'$.invalid\' DEFAULT \'false\' ON EMPTY, ' .
 		                'invalid_desc TEXT PATH \'$.invalid_desc\' DEFAULT \'""\' ON EMPTY ' .
 		       ') ) AS packlist ';
+	}
+
+
+
+	// Update one or more properties on a pack.
+	public function updatePackProperty( $projectID, $catID, $packID, $property, $value )
+	{
+		if ( ! is_array( $property ) )
+		{
+			$property = [ $property ];
+		}
+		if ( ! is_array( $value ) )
+		{
+			$value = [ $value ];
+		}
+		$sql = 'UPDATE redcap_external_module_settings ems SET ems.value = JSON_SET(ems.value';
+		$sqlParams = [];
+		for ( $i = 0; $i < count( $property ) && $i < count( $value ); $i++ )
+		{
+			$sql .= ',REPLACE(JSON_UNQUOTE(JSON_SEARCH(ems.value,\'one\',?,NULL,' .
+			        '\'$[*].id\')),\'.id\',?),?';
+			$sqlParams[] = json_encode( $packID );
+			$sqlParams[] = '.' . $property[$i];
+			$sqlParams[] = json_encode( $value[$i] );
+		}
+		$sql .= ') WHERE ems.external_module_id = (SELECT em.external_module_id FROM ' .
+		        'redcap_external_modules em WHERE em.directory_prefix = ? LIMIT 1) ' .
+		        'AND ems.key = ? AND JSON_CONTAINS( ems.value, ?, \'$[*]\')';
+		$sqlParams[] = $this->getModuleDirectoryBaseName();
+		$sqlParams[] = 'p' . $projectID . '-packlist-' . $catID;
+		$sqlParams[] = '{"id":' . json_encode( $packID ) . '}';
+		$this->query( $sql, $sqlParams );
 	}
 
 
