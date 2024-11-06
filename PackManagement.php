@@ -104,8 +104,8 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			return false;
 		}
 		$infoCat = json_decode( $infoCat['category'], true );
-		$paramsPacks = [ $module->getModuleDirectoryBaseName(),
-		                 'p' . $module->getProjectId() . '-packlist-' . $catID ];
+		$paramsPacks = [ $this->getModuleDirectoryBaseName(),
+		                 'p' . $this->getProjectId() . '-packlist-' . $catID ];
 		// If packs are assigned to DAGs, prepare to filter the list of packs by DAG.
 		$sqlPacks = '';
 		if ( $infoCat['dags'] )
@@ -140,22 +140,22 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		}
 		// Get the available packs, filtered as required.  Up to 4 packs are returned,
 		// those closest to expiry and from partially used blocks are preferred.
-		$queryPacks = $module->query( 'WITH packs AS (' .
-		                              'SELECT id, block_id, value, expiry, extrafields, assigned ' .
-		                              'FROM redcap_external_module_settings ems, ' .
-		                              'redcap_external_modules em, ' .
-		                              $module->makePacklistSQL('ems.value') .
-		                              'WHERE em.external_module_id = ems.external_module_id ' .
-		                              'AND em.directory_prefix = ? AND ems.key = ?' .
-		                              'AND packlist.invalid = 0' . $sqlPacks . ') ' .
-		                              'SELECT id, extrafields, (SELECT count(*) FROM packs p ' .
-		                              'WHERE p.assigned = 0) count FROM packs WHERE assigned = 0 ' .
-		                              $sqlPacks2 . ' ORDER BY expiry, if((SELECT count(*) ' .
-		                              'FROM packs p WHERE packs.block_id = p.block_id ' .
-		                              'AND p.assigned = 1)>0,0,1), (SELECT count(*) ' .
-		                              'FROM packs p WHERE packs.block_id = p.block_id ' .
-		                              'AND p.assigned = 0) LIMIT 4',
-		                              $paramsPacks );
+		$queryPacks = $this->query( 'WITH packs AS (' .
+		                            'SELECT id, block_id, value, expiry, extrafields, assigned ' .
+		                            'FROM redcap_external_module_settings ems, ' .
+		                            'redcap_external_modules em, ' .
+		                            $this->makePacklistSQL('ems.value') .
+		                            'WHERE em.external_module_id = ems.external_module_id ' .
+		                            'AND em.directory_prefix = ? AND ems.key = ?' .
+		                            'AND packlist.invalid = 0' . $sqlPacks . ') ' .
+		                            'SELECT id, extrafields, (SELECT count(*) FROM packs p ' .
+		                            'WHERE p.assigned = 0) count FROM packs WHERE assigned = 0 ' .
+		                            $sqlPacks2 . ' ORDER BY expiry, if((SELECT count(*) ' .
+		                            'FROM packs p WHERE packs.block_id = p.block_id ' .
+		                            'AND p.assigned = 1)>0,0,1), (SELECT count(*) ' .
+		                            'FROM packs p WHERE packs.block_id = p.block_id ' .
+		                            'AND p.assigned = 0) LIMIT 4',
+		                            $paramsPacks );
 		// Pick a pack.
 		$infoPack = null;
 		while ( $nextPack = $queryPacks->fetch_assoc() )
@@ -402,6 +402,53 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Get values for a specific record/event/instance.
+	public function getValues( $projectID, $recordID, $eventID, $instanceNum, $fieldNames )
+	{
+		if ( ! is_array( $fieldNames ) )
+		{
+			$fieldNames = [ $fieldNames ];
+		}
+		$listRepeatingFields = true;
+		$listRepeatingForms = $this->getRepeatingForms( $eventID, $projectID );
+		if ( empty( $listRepeatingForms ) )
+		{
+			$listRepeatingFields = [];
+		}
+		elseif ( $listRepeatingForms[0] != '' )
+		{
+			$listRepeatingFields = [];
+			foreach ( $listRepeatingForms as $repeatingForm )
+			{
+				foreach ( $this->getProject( $projectID )->getForm( $repeatingForm )->getFieldNames()
+				          as $fieldName )
+				{
+					$listRepeatingFields[ $fieldName ] = $repeatingForm;
+				}
+			}
+		}
+		$recordData = \REDCap::getData( $projectID, 'array', $recordID, $fieldNames,
+		                                $eventID, null, true );
+		$listValues = [];
+		foreach ( $fieldNames as $fieldName )
+		{
+			if ( $listRepeatingFields === true || isset( $listRepeatingFields[ $fieldName ] ) )
+			{
+				$repeatingFormName = $listRepeatingFields === true
+				                     ? '' : $listRepeatingFields[ $fieldName ]
+				$listValues[ $fieldName ] = $recordData[ $recordID ]['repeat_instances'][ $eventID ]
+				                            [ $repeatingFormName ][ $instanceNum ][ $fieldName ];
+			}
+			else
+			{
+				$listValues[ $fieldName ] = $recordData[ $recordID ][ $eventID ][ $fieldName ];
+			}
+		}
+		return $listValues;
+	}
+
+
+
 	// Check if a minimization pack category exists.
 	public function hasMinimPackCategory()
 	{
@@ -465,6 +512,48 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		$sqlParams[] = 'p' . $projectID . '-packlist-' . $catID;
 		$sqlParams[] = '{"id":' . json_encode( $packID ) . '}';
 		$this->query( $sql, $sqlParams );
+	}
+
+
+
+	// Update a record with new data on a specific record/event/instance.
+	public function updateValues( $projectID, $recordID, $eventID, $instanceNum, $infoData )
+	{
+		$listRepeatingFields = true;
+		$listRepeatingForms = $this->getRepeatingForms( $eventID, $projectID );
+		if ( empty( $listRepeatingForms ) )
+		{
+			$listRepeatingFields = [];
+		}
+		elseif ( $listRepeatingForms[0] != '' )
+		{
+			$listRepeatingFields = [];
+			foreach ( $listRepeatingForms as $repeatingForm )
+			{
+				foreach ( $this->getProject( $projectID )->getForm( $repeatingForm )->getFieldNames()
+				          as $fieldName )
+				{
+					$listRepeatingFields[ $fieldName ] = $repeatingForm;
+				}
+			}
+		}
+		$newData = [];
+		foreach ( $infoData as $fieldName => $value )
+		{
+			if ( $listRepeatingFields === true || isset( $listRepeatingFields[ $fieldName ] ) )
+			{
+				$repeatingFormName = $listRepeatingFields === true
+				                     ? '' : $listRepeatingFields[ $fieldName ]
+				$newData[ $recordID ]['repeat_instances'][ $eventID ][ $repeatingFormName ]
+				        [ $instanceNum ][ $fieldName ] = $value;
+			}
+			else
+			{
+				$newData[ $recordID ][ $eventID ][ $fieldName ] = $value;
+			}
+		}
+		$result = \REDCap::saveData( $projectID, 'array', $newData, 'normal', 'YMD' );
+		return empty( $result['errors'] );
 	}
 
 
