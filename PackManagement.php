@@ -331,6 +331,39 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Get the record, event ID and instance number for an assigned pack.
+	public function getPackAssignedRecord( $catID, $packID )
+	{
+		// Get the pack category details.
+		$queryCat = $this->query( 'SELECT ems.`value` AS category ' .
+		                          'FROM redcap_external_module_settings ems JOIN ' .
+		                          'redcap_external_modules em ON ems.external_module_id = ' .
+		                          'em.external_module_id WHERE em.directory_prefix = ? AND ' .
+		                          'ems.`key` = ? AND ' .
+		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $this->getProjectId() . '-packcat-' . $catID ] );
+		$infoCat = $queryCat->fetch_assoc();
+		if ( count( $infoCat ) != 1 )
+		{
+			return false;
+		}
+		$infoCat = json_decode( $infoCat['category'], true );
+		$packField = $infoCat['packfield'];
+		$queryRecord = $this->query( 'SELECT record, event_id event, ifnull(instance,1) instance ' .
+		                             'FROM ' . $this->getDataTable( $this->getProjectId() ) . ' ' .
+		                             'WHERE project_id = ? AND field_name = ? AND value = ?',
+		                             [ $this->getProjectId(), $packField, $packID ] );
+		$infoRecord = $queryRecord->fetch_assoc();
+		if ( count( $infoRecord ) != 1 )
+		{
+			return false;
+		}
+		return $infoRecord;
+	}
+
+
+
 	// Get the list of pack field types, or the description of a specified type.
 	public function getPackFieldTypes( $type = null )
 	{
