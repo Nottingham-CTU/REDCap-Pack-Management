@@ -35,7 +35,7 @@
 	},
 	"crons" : [
 		{
-			"cron_name" : "autoAssignmentCron",
+			"cron_name" : "auto_assignment_cron",
 			"cron_description" : "Automatic pack assignment",
 			"method" : "autoAssignmentCron",
 			"cron_frequency" : "600",

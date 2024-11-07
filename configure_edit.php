@@ -106,7 +106,8 @@ else
 		// Check that there is not another minimization pack category already enabled for this
 		// project. Multiple non-enabled minimization pack categories can co-exist but only one
 		// can be enabled at any time.
-		if ( $module->query( 'SELECT 1 FROM redcap_external_module_settings ems JOIN ' .
+		if ( $infoCategory['enabled'] && $infoCategory['trigger'] == 'M' &&
+		     $module->query( 'SELECT 1 FROM redcap_external_module_settings ems JOIN ' .
 		                     'redcap_external_modules em ON ems.external_module_id = ' .
 		                     'em.external_module_id WHERE em.directory_prefix = ? AND ems.`key` ' .
 		                     'LIKE ? AND json_contains( ems.`value`, \'true\', \'$.enabled\' ) ' .

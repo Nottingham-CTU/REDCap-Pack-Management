@@ -235,8 +235,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                          'FROM redcap_external_module_settings ems JOIN ' .
 		                          'redcap_external_modules em ON ems.external_module_id = ' .
 		                          'em.external_module_id WHERE em.directory_prefix = ? AND ' .
-		                          'ems.`key` = ? AND ' .
-		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')',
+		                          'ems.`key` = ? AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')',
 		                          [ $this->getModuleDirectoryBaseName(),
 		                            'p' . $this->getProjectId() . '-packcat-' . $catID ] );
 		$infoCat = $queryCat->fetch_assoc();
@@ -253,9 +252,9 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		if ( $infoCat['dags'] )
 		{
 			// Get the record DAG.
-			$queryDAG = $this->query( 'SELECT rd.`value` AS dag FROM ' .
+			$queryDAG = $this->query( 'SELECT `value` AS dag FROM ' .
 			                          $this->getDataTable( $this->getProjectId() ) .
-			                          'WHERE project_id = ? AND record = ? AND field_name = ?',
+			                          ' WHERE project_id = ? AND record = ? AND field_name = ?',
 			                          [ $this->getProjectId(), $recordID, '__GROUPID__' ] );
 			$infoDAG = $queryDAG->fetch_assoc();
 			if ( empty( $infoDAG ) )
@@ -277,18 +276,19 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		// If the pack must match a value, prepare to filter by it.
 		if ( $value !== null )
 		{
-			$sqlPacks2 .= ' AND packlist.value = ?';
+			$sqlPacks2 .= ' AND value = ?';
 			$paramsPacks[] = $value;
 		}
 		// Get the available packs, filtered as required.  Up to 4 packs are returned,
 		// those closest to expiry and from partially used blocks are preferred.
 		$queryPacks = $this->query( 'WITH packs AS (' .
-		                            'SELECT id, block_id, value, expiry, extrafields, assigned ' .
+		                            'SELECT id, block_id, packlist.value, expiry, ' .
+		                            'extrafields, assigned ' .
 		                            'FROM redcap_external_module_settings ems, ' .
 		                            'redcap_external_modules em, ' .
 		                            $this->makePacklistSQL('ems.value') .
 		                            'WHERE em.external_module_id = ems.external_module_id ' .
-		                            'AND em.directory_prefix = ? AND ems.key = ?' .
+		                            'AND em.directory_prefix = ? AND ems.key = ? ' .
 		                            'AND packlist.invalid = 0' . $sqlPacks . ') ' .
 		                            'SELECT id, extrafields, (SELECT count(*) FROM packs p ' .
 		                            'WHERE p.assigned = 0) count FROM packs WHERE assigned = 0 ' .
@@ -459,7 +459,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                          [ $this->getModuleDirectoryBaseName(),
 		                            'p' . $this->getProjectId() . '-packcat-%',
 		                            json_encode( $minimField ) ] );
-		$infoCat = $queryCat->fetch_assoc()
+		$infoCat = $queryCat->fetch_assoc();
 		return $infoCat ? $infoCat['packfield'] : null;
 	}
 
@@ -610,7 +610,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			if ( $listRepeatingFields === true || isset( $listRepeatingFields[ $fieldName ] ) )
 			{
 				$repeatingFormName = $listRepeatingFields === true
-				                     ? '' : $listRepeatingFields[ $fieldName ]
+				                     ? '' : $listRepeatingFields[ $fieldName ];
 				$listValues[ $fieldName ] = $recordData[ $recordID ]['repeat_instances'][ $eventID ]
 				                            [ $repeatingFormName ][ $instanceNum ][ $fieldName ];
 			}
@@ -718,7 +718,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			if ( $listRepeatingFields === true || isset( $listRepeatingFields[ $fieldName ] ) )
 			{
 				$repeatingFormName = $listRepeatingFields === true
-				                     ? '' : $listRepeatingFields[ $fieldName ]
+				                     ? '' : $listRepeatingFields[ $fieldName ];
 				$newData[ $recordID ]['repeat_instances'][ $eventID ][ $repeatingFormName ]
 				        [ $instanceNum ][ $fieldName ] = $value;
 			}
