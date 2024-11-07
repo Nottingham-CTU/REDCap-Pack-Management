@@ -34,6 +34,148 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Run whenever a record is saved. This will trigger pack assignments where the assignment
+	// mode is Automatic, or Form submission for the current form.
+	public function redcap_save_record( $projectID, $recordID, $instrument, $eventID, $groupID,
+	                                    $surveyHash, $responseID, $repeatInstance )
+	{
+		$this->dbGetLock();
+		// Get the pack categories which are relevant to this submission.
+		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS id, ' .
+		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.logic\')) AS logic, ' .
+		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) ' .
+		                          'AS packfield, JSON_UNQUOTE(JSON_EXTRACT(`value`,' .
+		                          '\'$.valuefield\')) AS valuefield ' .
+		                          'FROM redcap_external_module_settings ems ' .
+		                          'JOIN redcap_external_modules em ' .
+		                          'ON ems.external_module_id = em.external_module_id ' .
+		                          'WHERE em.directory_prefix = ? AND ems.`key` LIKE ? ' .
+		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\') ' .
+		                          'AND ( JSON_CONTAINS(`value`,\'"A"\',\'$.trigger\') ' .
+		                            'OR ( JSON_CONTAINS(`value`,\'"F"\',\'$.trigger\') ' .
+		                              'AND JSON_CONTAINS(`value`,?,\'$.form\') ) )',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $this->getProjectId() . '-packcat-%',
+		                            json_encode( $instrument ) ] );
+		$listCat = [];
+		while ( $infoCat = $queryCat->fetch_assoc() )
+		{
+			// Check that the pack field on the record/event/instance is empty and that the
+			// logic (if specified) evaluates as true.
+			if ( $this->getValues( $projectID, $recordID, $eventID, $repeatInstance,
+			                       $infoCat['packfield'] )[ $infoCat['packfield'] ] == '' &&
+			     ( $infoCat['logic'] == '' ||
+			       \REDCap::evaluateLogic( $infoCat['logic'], $projectID, $recordID, $eventID,
+			                               $repeatInstance, $instrument, $instrument ) ) )
+			{
+				$listCat[ $infoCat['id'] ] = $infoCat['valuefield'];
+			}
+		}
+		foreach ( $listCat as $catID => $valueField )
+		{
+			// Get and assign pack for the pack category.
+			$packValue = null;
+			if ( $valueField != '' )
+			{
+				$packValue = $this->getValues( $projectID, $recordID, $eventID,
+				                               $repeatInstance, $valueField )[ $valueField ];
+			}
+			$infoData = $this->choosePack( $catID, $recordID, $packValue );
+			// Save the data to the record.
+			if ( $infoData !== false )
+			{
+				$this->updateValues( $projectID, $recordID, $eventID, $repeatInstance, $infoData );
+			}
+		}
+		$this->dbReleaseLock();
+	}
+
+
+
+	// Run on schedule to trigger pack assignments automatically where required.
+	public function autoAssignmentCron( $infoCron )
+	{
+		$startTimestamp = time();
+		$activeProjects = implode( ',', $this->getProjectsWithModuleEnabled() );
+		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS id, ' .
+		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.logic\')) AS logic, ' .
+		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) ' .
+		                          'AS packfield, JSON_UNQUOTE(JSON_EXTRACT(`value`,' .
+		                          '\'$.valuefield\')) AS valuefield, ' .
+		                          'REGEXP_SUBSTR(`key`,\'[0-9]+\') project_id, ' .
+		                          'IFNULL((SELECT `value` FROM redcap_external_module_settings ' .
+		                          'ems1 WHERE ems1.`key` = REGEXP_REPLACE(ems.`key`,' .
+		                          '\'^p([0-9]+)-packcat-\',\'p$1-packcatats-\')), \'0\') ts ' .
+		                          'FROM redcap_external_module_settings ems ' .
+		                          'JOIN redcap_external_modules em ' .
+		                          'ON ems.external_module_id = em.external_module_id ' .
+		                          'WHERE em.directory_prefix = ? AND ems.`key` LIKE ? ' .
+		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\') ' .
+		                          'AND JSON_CONTAINS(`value`,\'"A"\',\'$.trigger\') ' .
+		                          'HAVING project_id IN (' . $activeProjects . ') ' .
+		                          'ORDER BY CAST(ts AS decimal)',
+		                          [ $this->getModuleDirectoryBaseName(), 'p%-packcat-%' ] );
+		while ( $infoCat = $queryCat->fetch_assoc() )
+		{
+			if ( time() - $startTimestamp > 300 )
+			{
+				break;
+			}
+			// Get the project ID and set the project context.
+			$projectID = $infoCat['project_id'];
+			$_GET['pid'] = $projectID;
+			$GLOBALS['Proj'] = new Project( $projectID );
+			// Get list of records/events/instances which contain data.
+			$queryRecords =
+				$this->query( 'SELECT record, event_id, max(ifnull(instance,1)) max_instance ' .
+				              'FROM ' . $this->getDataTable( $projectID ) . ' ' .
+				              'WHERE project_id = ? GROUP BY record, event_id',
+				              [ $projectID ] );
+			// For each record/event.
+			while ( $infoRecord = $queryRecords->fetch_assoc() )
+			{
+				$recordID = $infoRecord['record'];
+				$eventID = $infoRecord['event_id'];
+				$maxInstance = $infoRecord['max_instance'];
+				// For each instance of this record/event.
+				for ( $instanceNum = 1; $instanceNum <= $maxInstance; $instanceNum++ )
+				{
+					$this->dbGetLock();
+					// Check that the pack field on the record/event/instance is empty and that the
+					// logic (if specified) evaluates as true.
+					if ( ! ( $this->getValues( $projectID, $recordID, $eventID, $instanceNum,
+					                       $infoCat['packfield'] )[ $infoCat['packfield'] ] == '' &&
+					         ( $infoCat['logic'] == '' ||
+					           \REDCap::evaluateLogic( $infoCat['logic'], $projectID, $recordID,
+					                                   $eventID, $instanceNum ) ) ) )
+					{
+						continue;
+					}
+					// Get and assign pack for the pack category.
+					$packValue = null;
+					if ( $infoCat['valuefield'] != '' )
+					{
+						$packValue = $this->getValues( $projectID, $recordID, $eventID,
+						                               $instanceNum, $infoCat['valuefield'] )
+						                             [ $infoCat['valuefield'] ];
+					}
+					$infoData = $this->choosePack( $catID, $recordID, $packValue );
+					// Save the data to the record.
+					if ( $infoData !== false )
+					{
+						$this->updateValues( $projectID, $recordID, $eventID,
+						                     $instanceNum, $infoData );
+					}
+					$this->dbReleaseLock();
+				}
+			}
+			// Update last-run timestamp for this pack category.
+			$this->setSystemSetting( 'p' . $projectID . '-packcatats-' . $infoCat['id'], time() );
+		}
+	}
+
+
+
 	// Assign a minimization pack as requested by the Minimization module.
 	public function assignMinimPack( $recordID, $listMinimCodes, $minimField = '' )
 	{
