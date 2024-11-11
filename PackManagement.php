@@ -315,19 +315,11 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			$this->dbReleaseLock();
 			return false;
 		}
-		// Set the pack as assigned.
+		// Set the pack as assigned and write the pack assignment to the log.
 		$this->updatePackProperty( $this->getProjectId(), $catID,
 		                           $infoPack['id'], 'assigned', true );
-		// Write the pack assignment to the log.
-		$infoLog = [ 'event' => 'PACK_ASSIGN', 'user' => ( defined('USERID') ? USERID : '' ),
-		             'time' => date( 'Y-m-d H:i:s' ),
-		             'data' => [ 'id' => $infoPack['id'], 'record' => $recordID ] ];
-		$this->query( 'UPDATE redcap_external_module_settings SET `value` = ' .
-		                'JSON_MERGE_PRESERVE(`value`,?) WHERE external_module_id = ' .
-		                '(SELECT external_module_id FROM redcap_external_modules WHERE ' .
-		                'directory_prefix = ?) AND `key` = ?',
-		                [ json_encode( [$infoLog] ), $this->getModuleDirectoryBaseName(),
-		                 'p' . $this->getProjectId() . '-packlog-' . $infoCat['id'] ] );
+		$this->updatePackLog( $this->getProjectId(), $infoCat['id'], 'PACK_ASSIGN',
+		                      [ 'id' => $infoPack['id'], 'record' => $recordID ] );
 		$this->dbReleaseLock();
 		// Return the fields/values to be updated on the record.
 		$infoValues = [ $infoCat['packfield'] => $infoPack['id'] ];
@@ -339,9 +331,8 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		{
 			$infoValues[ $infoCat['countfield'] ] = $infoPack['count'] - 1;
 		}
-		$listCatExtraFields = json_decode( $infoCat['extrafields'], true );
 		$listPackExtraFields = json_decode( $infoPack['extrafields'], true );
-		foreach ( $listCatExtraFields as $extraFieldName => $infoCatExtraField )
+		foreach ( $infoCat['extrafields'] as $extraFieldName => $infoCatExtraField )
 		{
 			if ( $infoCatExtraField['field'] != '' )
 			{
@@ -480,8 +471,8 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		$queryCat = $this->query( 'SELECT ems.`value` AS category ' .
 		                          'FROM redcap_external_module_settings ems JOIN ' .
 		                          'redcap_external_modules em ON ems.external_module_id = ' .
-		                          'em.external_module_id WHERE em.directory_prefix = ? AND ' .
-		                          'ems.`key` = ? AND ' .
+		                          'em.external_module_id WHERE em.directory_prefix = ? ' .
+		                          'AND ems.`key` = ? ' .
 		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')',
 		                          [ $this->getModuleDirectoryBaseName(),
 		                            'p' . $this->getProjectId() . '-packcat-' . $catID ] );
@@ -497,11 +488,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                             'WHERE project_id = ? AND field_name = ? AND value = ?',
 		                             [ $this->getProjectId(), $packField, $packID ] );
 		$infoRecord = $queryRecord->fetch_assoc();
-		if ( count( $infoRecord ) != 1 )
-		{
-			return false;
-		}
-		return $infoRecord;
+		return $infoRecord ? $infoRecord : false;
 	}
 
 
@@ -659,6 +646,21 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Update the log for a pack category with a new entry.
+	public function updatePackLog( $projectID, $catID, $logEvent, $logData )
+	{
+		$logItem = json_encode( [ 'event' => $logEvent,
+		                          'user' => ( defined('USERID') ? USERID : '' ),
+		                          'time' => date('Y-m-d H:i:s'), 'data' => $logData ] );
+		$sql = 'UPDATE redcap_external_module_settings SET `value` = JSON_MERGE_PRESERVE(' .
+		       '`value`,?) WHERE external_module_id = (SELECT external_module_id FROM ' .
+		       'redcap_external_modules WHERE directory_prefix = ?) AND `key` = ?';
+		$this->query( $sql, [ $logItem, $this->getModuleDirectoryBaseName(),
+		                      'p' . $projectID . '-packlog-' . $catID ] );
+	}
+
+
+
 	// Update one or more properties on a pack.
 	public function updatePackProperty( $projectID, $catID, $packID, $property, $value )
 	{
@@ -675,17 +677,17 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		for ( $i = 0; $i < count( $property ) && $i < count( $value ); $i++ )
 		{
 			$sql .= ',REPLACE(JSON_UNQUOTE(JSON_SEARCH(ems.value,\'one\',?,NULL,' .
-			        '\'$[*].id\')),\'.id\',?),?';
-			$sqlParams[] = json_encode( $packID );
+			        '\'$[*].id\')),\'.id\',?),CAST(? AS JSON)';
+			$sqlParams[] = $packID;
 			$sqlParams[] = '.' . $property[$i];
 			$sqlParams[] = json_encode( $value[$i] );
 		}
 		$sql .= ') WHERE ems.external_module_id = (SELECT em.external_module_id FROM ' .
 		        'redcap_external_modules em WHERE em.directory_prefix = ? LIMIT 1) ' .
-		        'AND ems.key = ? AND JSON_CONTAINS( ems.value, ?, \'$[*]\')';
+		        'AND ems.key = ? AND JSON_CONTAINS( JSON_EXTRACT( ems.value, \'$[*].id\' ), ? )';
 		$sqlParams[] = $this->getModuleDirectoryBaseName();
 		$sqlParams[] = 'p' . $projectID . '-packlist-' . $catID;
-		$sqlParams[] = '{"id":' . json_encode( $packID ) . '}';
+		$sqlParams[] = json_encode( $packID );
 		$this->query( $sql, $sqlParams );
 	}
 

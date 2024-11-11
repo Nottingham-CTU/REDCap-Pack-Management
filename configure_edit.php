@@ -53,7 +53,7 @@ else
 		foreach ( [ 'enabled', 'trigger', 'form', 'logic', 'nominim', 'dags', 'dags_rcpt', 'blocks',
 		            'expire', 'packfield', 'datefield', 'countfield', 'valuefield' ] as $fieldName )
 		{
-			if ( in_array( $fieldName, [ 'enabled', 'dags', 'blocks', 'expire' ] ) )
+			if ( in_array( $fieldName, [ 'enabled', 'dags', 'dags_rcpt', 'blocks', 'expire' ] ) )
 			{
 				$infoCategory[ $fieldName ] = ( $_POST[ $fieldName ] == '1' );
 			}
@@ -138,14 +138,8 @@ else
 				$module->setSystemSetting( 'p' . $module->getProjectId() . '-packlog-' .
 				                           $infoCategory['id'], '[]' );
 			}
-			$infoLog = [ 'event' => $logEvent, 'user' => USERID, 'time' => date( 'Y-m-d H:i:s' ),
-			             'data' => $infoCategory ];
-			$module->query( 'UPDATE redcap_external_module_settings SET `value` = ' .
-			                'JSON_MERGE_PRESERVE(`value`,?) WHERE external_module_id = ' .
-			                '(SELECT external_module_id FROM redcap_external_modules WHERE ' .
-			                'directory_prefix = ?) AND `key` = ?',
-			                [ json_encode( [$infoLog] ), $module->getModuleDirectoryBaseName(),
-			                 'p' . $module->getProjectId() . '-packlog-' . $infoCategory['id'] ] );
+			$module->updatePackLog( $module->getProjectId(), $infoCategory['id'],
+			                        $logEvent, $infoCategory );
 			$module->dbReleaseLock();
 			header( 'Location: ' . $module->getUrl( 'configure.php' ) );
 			exit;

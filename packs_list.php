@@ -88,6 +88,157 @@ while ( $infoPack = $queryPacks->fetch_assoc() )
 }
 
 
+// Handle form submission.
+if ( isset( $_POST['action'] ) )
+{
+	// Acknowledge packs as received.
+	if ( $infoCategory['dags'] && $_POST['action'] == 'rcpt' )
+	{
+		$listChosen = json_decode( $_POST['packs'], true );
+		if ( $infoCategory['blocks'] )
+		{
+			$listChosenBlocks = [];
+			$listUnchosenBlocks = [];
+			foreach ( $listPacks as $infoPack )
+			{
+				if ( in_array( $infoPack['id'], $listChosen ) )
+				{
+					$listChosenBlocks[ $infoPack['block_id'] ] = true;
+				}
+				else
+				{
+					$listUnchosenBlocks[ $infoPack['block_id'] ] = true;
+				}
+			}
+			if ( ! empty( array_intersect_key( $listChosenBlocks, $listUnchosenBlocks ) ) )
+			{
+				$listErrors[] = 'mark_packs_rcpt_error' .
+				                ( $infoCategory['blocks'] ? '_wb' : '_nb' );
+			}
+		}
+		if ( empty( $listErrors ) )
+		{
+			// Acknowledge each pack as received.
+			$module->dbGetLock();
+			foreach ( $listChosen as $packID )
+			{
+				$module->updatePackProperty( $module->getProjectId(), $infoCategory['id'], $packID,
+				                             'dag_rcpt', true );
+				$module->updatePackLog( $module->getProjectId(), $infoCategory['id'],
+				                        'PACK_RCPT', [ 'id' => $packID ] );
+			}
+			$module->dbReleaseLock();
+		}
+	}
+	// Issue packs to DAG.
+	if ( $infoCategory['dags'] && $_POST['action'] == 'issue' )
+	{
+		$listChosen = json_decode( $_POST['packs'], true );
+		if ( $infoCategory['blocks'] )
+		{
+			$listChosenBlocks = [];
+			$listUnchosenBlocks = [];
+			foreach ( $listPacks as $infoPack )
+			{
+				if ( in_array( $infoPack['id'], $listChosen ) )
+				{
+					$listChosenBlocks[ $infoPack['block_id'] ] = true;
+				}
+				else
+				{
+					$listUnchosenBlocks[ $infoPack['block_id'] ] = true;
+				}
+			}
+			if ( ! empty( array_intersect_key( $listChosenBlocks, $listUnchosenBlocks ) ) )
+			{
+				$listErrors[] = 'issue_unissue_packs_error' .
+				                ( $infoCategory['blocks'] ? '_wb' : '_nb' );
+			}
+		}
+		if ( empty( $listErrors ) )
+		{
+			// Assign each pack to the selected DAG. If packs must be marked as received then
+			// clear the received flag.
+			$module->dbGetLock();
+			if ( $_POST['dag_id'] == '' )
+			{
+				$_POST['dag_id'] = null;
+			}
+			foreach ( $listChosen as $packID )
+			{
+				$module->updatePackProperty( $module->getProjectId(), $infoCategory['id'], $packID,
+				                             [ 'dag', 'dag_rcpt' ],
+				                             [ $_POST['dag_id'], ! $infoCategory['dags_rcpt'] ] );
+				$infoLog = [ 'id' => $packID ];
+				if ( $_POST['dag_id'] !== null )
+				{
+					$infoLog['dag'] = $_POST['dag_id'];
+				}
+				$module->updatePackLog( $module->getProjectId(), $infoCategory['id'],
+				                        $_POST['dag_id'] === null ? 'PACK_UNISSUE' : 'PACK_ISSUE',
+				                        $infoLog );
+			}
+			$module->dbReleaseLock();
+		}
+	}
+	// Mark packs as invalid.
+	if ( $infoCategory['dags'] && $_POST['action'] == 'invalid' )
+	{
+		$listChosen = json_decode( $_POST['packs'], true );
+		if ( $infoCategory['blocks'] )
+		{
+			$listValidPacks = [];
+			$listInvalidPacks = [];
+			foreach ( $listPacks as $infoPack )
+			{
+				if ( in_array( $infoPack['id'], $listChosen ) )
+				{
+					if ( $infoPack['assigned'] )
+					{
+						$listErrors[] = 'mark_unmark_packs_invalid_error';
+						break;
+					}
+					if ( $infoPack['invalid'] )
+					{
+						$listInvalidPacks[ $infoPack['block_id'] ] = true;
+					}
+					else
+					{
+						$listValidPacks[ $infoPack['block_id'] ] = true;
+					}
+				}
+			}
+			if ( ! empty( array_intersect_key( $listValidPacks, $listInvalidPacks ) ) )
+			{
+				$listErrors[] = 'mark_unmark_packs_invalid_error';
+			}
+		}
+		if ( empty( $listErrors ) )
+		{
+			$packsInvalid = empty( $listInvalidPacks );
+			$invalidDesc = trim( str_replace( [ "\r\n", "\r" ], "\n", $_POST['invalid_desc'] ) );
+			// Acknowledge each pack as received.
+			$module->dbGetLock();
+			foreach ( $listChosen as $packID )
+			{
+				$module->updatePackProperty( $module->getProjectId(), $infoCategory['id'], $packID,
+				                             ['invalid', 'invalid_desc'],
+				                             [ $packsInvalid, $invalidDesc ] );
+				$infoLog = [ 'id' => $packID, 'invalid' => $packsInvalid,
+				             'invalid_desc' => $invalidDesc ];
+				$module->updatePackLog( $module->getProjectId(), $infoCategory['id'],
+				                        $packsInvalid ? 'PACK_INVALID' : 'PACK_VALID',
+				                        $infoLog);
+			}
+			$module->dbReleaseLock();
+		}
+	}
+	$_SESSION['pack_management_listerrors'] = json_encode( $listErrors );
+	header( 'Location: ' . $_SERVER['REQUEST_URI'] );
+	exit;
+}
+
+
 // Display the project header
 require_once APP_PATH_DOCROOT . 'ProjectGeneral/header.php';
 $module->writeStyle();
@@ -107,17 +258,17 @@ $module->writeStyle();
 <p>&nbsp;</p>
 
 <?php
-if ( ! empty( $_POST ) )
+if ( isset( $_SESSION['pack_management_listerrors'] ) )
 {
+	$listErrors = json_decode( $_SESSION['pack_management_listerrors'], true );
+	unset( $_SESSION['pack_management_listerrors'] );
 	if ( empty( $listErrors ) )
 	{
-		// TODO: Add message text.
-		echo '<div class="mod-packmgmt-okmsg"><p>', '', '</p></div>';
+		echo '<div class="mod-packmgmt-okmsg"><p>', $module->tt( 'save_packs_ok' ), '</p></div>';
 	}
 	else
 	{
-		// TODO: Add message text.
-		echo '<div class="mod-packmgmt-errmsg"><p>', '', '</p><ul>';
+		echo '<div class="mod-packmgmt-errmsg"><p>', $module->tt( 'save_packs_err' ), '</p><ul>';
 		foreach ( $listErrors as $infoError )
 		{
 			echo '<li>', $module->tt( ...$infoError ), '</li>';
@@ -169,6 +320,10 @@ if ( $infoCategory['expire'] )
 $row = 0;
 foreach ( $listPacks as $infoPack )
 {
+	$packAssigned = $infoPack['assigned']
+	                ? $module->getPackAssignedRecord( $infoCategory['id'], $infoPack['id'] )
+	                : false;
+
 ?>
  <tr>
   <td style="text-align:center">
@@ -178,13 +333,16 @@ foreach ( $listPacks as $infoPack )
              data-assigned="<?php echo $infoPack['assigned'] ? 'true' : 'false'; ?>"
              data-invalid="<?php echo $infoPack['invalid'] ? 'true' : 'false'; ?>"
              data-dag="<?php echo $module->escape( $infoPack['dag'] ?? '' ); ?>"
+             data-dag-rcpt="<?php echo $infoPack['dag_rcpt'] ? 'true' : 'false'; ?>"
              title="<?php echo $module->tt('tooltip_chkbx_shift'); ?>">
   </td>
   <td>
    <?php echo $module->escape( $infoPack['id'] ), "\n"; ?>
    <span style="float:right">
     <?php echo $infoPack['assigned'] ? ( '<i class="far fa-square-check" title="' .
-                                         $module->tt('tooltip_pack_assigned') . '"></i>' ) : ''; ?>
+                                         $module->tt('tooltip_pack_assigned') . '&#10;' .
+                                         $module->escape( $packAssigned['record'] ) . '"></i>' )
+                                     : ''; ?>
     <?php echo $infoPack['invalid'] ? ( '<i class="fas fa-ban" title="' .
                                         $module->escape( $infoPack['invalid_desc'] ) .
                                         '"></i>&nbsp;' ) : '', "\n"; ?>
@@ -221,7 +379,9 @@ foreach ( $listPacks as $infoPack )
 <p>&nbsp;</p>
 
 <?php
-if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
+if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_view'] ) &&
+                        $infoCategory['dags'] && $infoCategory['dags_rcpt'] ) ||
+                      ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
                         $infoCategory['dags'] && $userRights['group_id'] == '' ) ||
                       in_array( $roleName, $infoCategory['roles_invalid'] ) ||
                       in_array( $roleName, $infoCategory['roles_assign'] ) )
@@ -231,6 +391,33 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
  <?php echo $module->tt('with_selected_packs'), "\n"; ?>
 </p>
 <?php
+	if ( ( $canConfigure || in_array( $roleName, $infoCategory['roles_view'] ) ) &&
+	     $infoCategory['dags'] && $infoCategory['dags_rcpt'] )
+	{
+?>
+<form method="post" class="packmgmt-packrcpt">
+ <table class="mod-packmgmt-formtable" style="margin-bottom:5px">
+  <tr>
+   <th colspan="2"><?php echo $module->tt('mark_packs_rcpt'); ?></th>
+  </tr>
+  <tr>
+   <td colspan="2" class="errmsg" style="color:#58151c;display:none;text-align:left">
+    <?php echo $module->tt( 'mark_packs_rcpt_error' .
+                            ( $infoCategory['blocks'] ? '_wb' : '_nb' ) ), "\n"; ?>
+   </td>
+  </tr>
+  <tr>
+   <td></td>
+   <td>
+    <input type="hidden" name="action" value="rcpt">
+    <input type="hidden" name="packs" value="">
+    <input type="submit" value="<?php echo $module->tt('save'); ?>">
+   </td>
+  </tr>
+ </table>
+</form>
+<?php
+	}
 	if ( ( $canConfigure || in_array( $roleName, $infoCategory['roles_dags'] ) ) &&
 	     $infoCategory['dags'] && $userRights['group_id'] == '' )
 	{
@@ -249,7 +436,7 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
   <tr>
    <td><?php echo $module->tt('dag'); ?></td>
    <td>
-    <select name="">
+    <select name="dag_id">
      <option value=""><?php echo $module->tt('opt_none'); ?></option>
 <?php
 		foreach ( $listDAGs as $dagID => $dagName )
@@ -266,6 +453,7 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
    <td></td>
    <td>
     <input type="hidden" name="action" value="issue">
+    <input type="hidden" name="packs" value="">
     <input type="submit" value="<?php echo $module->tt('save'); ?>">
    </td>
   </tr>
@@ -295,6 +483,7 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
    <td></td>
    <td>
     <input type="hidden" name="action" value="invalid">
+    <input type="hidden" name="packs" value="">
     <input type="submit" value="<?php echo $module->tt('save'); ?>">
    </td>
   </tr>
@@ -303,7 +492,7 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_dags'] ) &&
 </form>
 <?php
 	}
-	if ( $canConfigure || in_array( $roleName, $infoCategory['roles_assign'] ) )
+	if ( false && $canConfigure || in_array( $roleName, $infoCategory['roles_assign'] ) )
 	{
 ?>
 <form method="post" class="packmgmt-packassign">
@@ -348,6 +537,27 @@ $(function()
     {
       vLastChecked = event.shiftKey ? ( vCB.attr('data-pack-chkbx') - 0 ) : 0
     }
+    if ( $('.packmgmt-packrcpt').length > 0 )
+    {
+      if ( ( [...new Set($('[data-pack-chkbx]').map(function(){return $(this)
+              .attr('data-block-id')}).get())].length == 1 ||
+             $('[data-pack-chkbx]:checked').map(function(){return $(this).attr('data-block-id')})
+             .filter($('[data-pack-chkbx]:not(:checked)').map(function(){return $(this)
+             .attr('data-block-id')})).get().length == 0 ) &&
+           $('[data-dag-rcpt="true"]:checked').length == 0 )
+      {
+        $('.packmgmt-packrcpt .errmsg').css('display','none')
+        $('.packmgmt-packrcpt input, .packmgmt-packrcpt select').prop('disabled',false)
+      }
+      else
+      {
+        $('.packmgmt-packrcpt .errmsg').css('display','')
+        $('.packmgmt-packrcpt input, .packmgmt-packrcpt select').prop('disabled',true)
+      }
+      $('.packmgmt-packrcpt [name="packs"]').val(
+          JSON.stringify($('[name="pack_id"]:checked')
+          .map(function(i,item){return $(item).val()}).get()) )
+    }
     if ( $('.packmgmt-packissue').length > 0 )
     {
       if ( ( [...new Set($('[data-pack-chkbx]').map(function(){return $(this)
@@ -355,8 +565,9 @@ $(function()
              $('[data-pack-chkbx]:checked').map(function(){return $(this).attr('data-block-id')})
              .filter($('[data-pack-chkbx]:not(:checked)').map(function(){return $(this)
              .attr('data-block-id')})).get().length == 0 ) &&
-           [...new Set($('[data-pack-chkbx]').map(function(){return $(this).attr('data-dag')})
-           .get())].length == 1 )
+           [...new Set($('[data-pack-chkbx]:checked').map(function(){return $(this)
+            .attr('data-dag')}).get())].length == 1 &&
+           $('[data-assigned="true"]:checked').length == 0 )
       {
         $('.packmgmt-packissue .errmsg').css('display','none')
         $('.packmgmt-packissue input, .packmgmt-packissue select').prop('disabled',false)
@@ -366,6 +577,9 @@ $(function()
         $('.packmgmt-packissue .errmsg').css('display','')
         $('.packmgmt-packissue input, .packmgmt-packissue select').prop('disabled',true)
       }
+      $('.packmgmt-packissue [name="packs"]').val(
+          JSON.stringify($('[name="pack_id"]:checked')
+          .map(function(i,item){return $(item).val()}).get()) )
     }
     if ( $('.packmgmt-packinvalid').length > 0 )
     {
@@ -387,6 +601,9 @@ $(function()
         $('.packmgmt-packinvalid .errmsg').css('display','')
         $('.packmgmt-packinvalid input, .packmgmt-packinvalid textarea').prop('disabled',true)
       }
+      $('.packmgmt-packinvalid [name="packs"]').val(
+          JSON.stringify($('[name="pack_id"]:checked')
+          .map(function(i,item){return $(item).val()}).get()) )
     }
     if ( $('.packmgmt-packassign').length > 0 )
     {
