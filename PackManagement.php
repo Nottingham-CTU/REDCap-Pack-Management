@@ -33,6 +33,47 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 	}
 
 
+	// Provide pack management settings to the REDCap UI Tweaker simplified view.
+	public function redcap_every_page_before_render()
+	{
+		if ( $this->isModuleEnabled('redcap_ui_tweaker') )
+		{
+			$UITweaker = \ExternalModules\ExternalModules::getModuleInstance('redcap_ui_tweaker');
+			if ( $UITweaker->areExtModFuncExpected() )
+			{
+				$UITweaker->addExtModFunc( $this->getModuleDirectoryBaseName(),
+				                           function( $data )
+				                           {
+				                               if ( substr( $data['setting'], 0, 8 ) != 'packcat-' )
+				                               {
+				                                   return false;
+				                               }
+				                               $input = json_decode( $data['value'], true );
+				                               $output = '';
+				                               foreach ( $input as $key => $val )
+				                               {
+				                                   if ( $key == 'extrafields' )
+				                                   {
+				                                       foreach ( $val as $key2 => $val2 )
+				                                       {
+				                                           $output .= "\nextrafields[";
+				                                           $output .= json_encode( $key2 );
+				                                           $output .= ']: ' . json_encode( $val2 );
+				                                       }
+				                                       continue;
+				                                   }
+				                                   $output .= "\n" . $key . ': ';
+				                                   $output .= is_string( $val )
+				                                              ? $val : json_encode( $val );
+				                               }
+				                               $data['value'] = substr( $output, 1 );
+				                               return $data;
+				                           } );
+			}
+		}
+	}
+
+
 
 	// Run whenever a record is saved. This will trigger pack assignments where the assignment
 	// mode is Automatic, or Form submission for the current form.
@@ -423,6 +464,28 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 	public function dbReleaseLock()
 	{
 		$this->query( 'DO RELEASE_LOCK(?)', [ $GLOBALS['db'] . '.pack_management' ] );
+	}
+
+
+
+	// Export project settings (e.g. for Project Deployment module).
+	public function exportProjectSettings( $projectID )
+	{
+		// Get the pack categories.
+		$queryCat = $this->query( 'SELECT REGEXP_REPLACE(ems.`key`,\'^p[0-9]+-\',\'\') AS `key`, ' .
+		                          '\'json\' AS `type`, ems.`value` ' .
+		                          'FROM redcap_external_module_settings ems JOIN ' .
+		                          'redcap_external_modules em ON ems.external_module_id = ' .
+		                          'em.external_module_id WHERE em.directory_prefix = ? ' .
+		                          'AND ems.`key` LIKE ? ORDER BY ems.`key`',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $projectID . '-packcat-%' ] );
+		$listCat = [];
+		while ( $infoCat = $queryCat->fetch_assoc() )
+		{
+			$listCat[] = $infoCat;
+		}
+		return $listCat;
 	}
 
 
