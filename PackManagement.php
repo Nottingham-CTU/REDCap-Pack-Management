@@ -165,19 +165,38 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			// Get the project ID and set the project context.
 			$projectID = $infoCat['project_id'];
 			$_GET['pid'] = $projectID;
-			$GLOBALS['Proj'] = new Project( $projectID );
+			$GLOBALS['Proj'] = new \Project( $projectID );
 			// Get list of records/events/instances which contain data.
 			$queryRecords =
 				$this->query( 'SELECT record, event_id, max(ifnull(instance,1)) max_instance ' .
 				              'FROM ' . $this->getDataTable( $projectID ) . ' ' .
 				              'WHERE project_id = ? GROUP BY record, event_id',
 				              [ $projectID ] );
+			$listRptForm = [];
 			// For each record/event.
 			while ( $infoRecord = $queryRecords->fetch_assoc() )
 			{
 				$recordID = $infoRecord['record'];
 				$eventID = $infoRecord['event_id'];
 				$maxInstance = $infoRecord['max_instance'];
+				// Get repeating instance form name if applicable.
+				if ( ! array_key_exists( $eventID, $listRptForm ) )
+				{
+					$queryRptForm = $this->query( 'SELECT m.form_name FROM redcap_metadata m ' .
+					                              'JOIN redcap_events_repeat er ON m.form_name = ' .
+					                              'er.form_name WHERE m.project_id = ? ' .
+					                              'AND er.event_id = ? AND m.field_name = ?',
+					                              [ $projectID, $eventID, $infoCat['packfield'] ] );
+					if ( $infoRptForm = $queryRptForm->fetch_assoc() )
+					{
+						$listRptForm[ $eventID ] = $infoRptForm['form_name'];
+					}
+					else
+					{
+						$listRptForm[ $eventID ] = null;
+					}
+				}
+				$rptForm = $listRptForm[ $eventID ];
 				// For each instance of this record/event.
 				for ( $instanceNum = 1; $instanceNum <= $maxInstance; $instanceNum++ )
 				{
@@ -188,7 +207,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 					                       $infoCat['packfield'] )[ $infoCat['packfield'] ] == '' &&
 					         ( $infoCat['logic'] == '' ||
 					           \REDCap::evaluateLogic( $infoCat['logic'], $projectID, $recordID,
-					                                   $eventID, $instanceNum ) ) ) )
+					                                   $eventID, $instanceNum, $rptForm ) ) ) )
 					{
 						continue;
 					}
@@ -200,7 +219,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 						                               $instanceNum, $infoCat['valuefield'] )
 						                             [ $infoCat['valuefield'] ];
 					}
-					$infoData = $this->choosePack( $catID, $recordID, $packValue );
+					$infoData = $this->choosePack( $infoCat['id'], $recordID, $packValue );
 					// Save the data to the record.
 					if ( $infoData !== false )
 					{
