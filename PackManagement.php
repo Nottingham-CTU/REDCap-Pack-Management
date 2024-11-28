@@ -265,7 +265,8 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		$chosenCode = null;
 		foreach ( $listMinimCodes as $minimCode )
 		{
-			$infoPack = $this->choosePack( $infoCat['id'], $recordID, $minimCode );
+			$infoPack = $this->choosePack( $infoCat['id'], $recordID, $minimCode,
+			                              ( $infoCat['nominim'] == 'S' ? null : $listMinimCodes ) );
 			$chosenCode = $minimCode;
 			if ( $infoPack !== false || $infoCat['nominim'] != 'S' )
 			{
@@ -287,7 +288,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 	// Choose a pack from the specified pack category and mark it as assigned.
-	public function choosePack( $catID, $recordID, $value = null )
+	public function choosePack( $catID, $recordID, $value = null, $reqPackValues = null )
 	{
 		$this->dbGetLock();
 		// Get the pack category details.
@@ -339,7 +340,17 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			$sqlPacks2 .= ' AND value = ?';
 			$paramsPacks[] = $value;
 		}
-		// Get the available packs, filtered as required.  Up to 4 packs are returned,
+		// If a required pack value does not exist amongst the available packs, return 0 rows.
+		if ( $reqPackValues !== null && is_array( $reqPackValues ) )
+		{
+			foreach ( $reqPackValues as $reqPackValue )
+			{
+				$sqlPacks2 .= ' AND EXISTS( SELECT 1 FROM packs p' .
+				              ' WHERE p.assigned = 0 AND p.value = ? )';
+				$paramsPacks[] = $reqPackValue;
+			}
+		}
+		// Get the available packs, filtered as required.  Up to 3 packs are returned,
 		// those closest to expiry and from partially used blocks are preferred.
 		$queryPacks = $this->query( 'WITH packs AS (' .
 		                            'SELECT id, block_id, packlist.value, expiry, ' .
@@ -356,15 +367,15 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                            'FROM packs p WHERE packs.block_id = p.block_id ' .
 		                            'AND p.assigned = 1)>0,0,1), (SELECT count(*) ' .
 		                            'FROM packs p WHERE packs.block_id = p.block_id ' .
-		                            'AND p.assigned = 0) LIMIT 4',
+		                            'AND p.assigned = 0), id LIMIT 3',
 		                            $paramsPacks );
 		// Pick a pack.
 		$infoPack = null;
 		while ( $nextPack = $queryPacks->fetch_assoc() )
 		{
-			// Use the first pack returned 50% of the time, second pack 25% etc.
+			// Use the 1st pack returned 67% of the time, 2nd pack 22%, 3rd pack 11%.
 			$infoPack = $nextPack;
-			if ( random_int( 0, 1 ) == 0 )
+			if ( random_int( 0, 2 ) > 0 )
 			{
 				break;
 			}
