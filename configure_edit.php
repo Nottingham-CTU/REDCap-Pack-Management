@@ -24,9 +24,10 @@ if ( $new )
 	                  'form' => '', 'logic' => '', 'nominim' => '', 'dags' => false,
 	                  'dags_rcpt' => false, 'blocks' => false, 'expire' => true, 'expire_buf' => 0,
 	                  'packfield' => '', 'datefield' => '', 'countfield' => '', 'valuefield' => '',
-	                  'extrafields' => [], 'roles_view' => [], 'roles_dags' => [],
-	                  'roles_invalid' => [], 'roles_assign' => [], 'roles_add' => [],
-	                  'roles_edit' => [] ];
+	                  'extrafields' => [], 'psendfield' => '', 'prcptfield' => '',
+	                  'preturnfield' => '', 'ptrnssave_ri' => false, 'roles_view' => [],
+	                  'roles_dags' => [], 'roles_invalid' => [], 'roles_assign' => [],
+	                  'roles_add' => [], 'roles_edit' => [] ];
 }
 else
 {
