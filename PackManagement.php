@@ -80,6 +80,12 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 	public function redcap_save_record( $projectID, $recordID, $instrument, $eventID, $groupID,
 	                                    $surveyHash, $responseID, $repeatInstance )
 	{
+		// Do not trigger if a form is being deleted.
+		if ( ! isset( $_POST[ $instrument . '_complete' ] ) )
+		{
+			return;
+		}
+
 		$this->dbGetLock();
 		// Get the pack categories which are relevant to this submission.
 		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS id, ' .
@@ -300,7 +306,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                          [ $this->getModuleDirectoryBaseName(),
 		                            'p' . $this->getProjectId() . '-packcat-' . $catID ] );
 		$infoCat = $queryCat->fetch_assoc();
-		if ( count( $infoCat ) != 1 )
+		if ( ! is_array( $infoCat ) )
 		{
 			$this->dbReleaseLock();
 			return false;
@@ -565,12 +571,11 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                          'FROM redcap_external_module_settings ems JOIN ' .
 		                          'redcap_external_modules em ON ems.external_module_id = ' .
 		                          'em.external_module_id WHERE em.directory_prefix = ? ' .
-		                          'AND ems.`key` = ? ' .
-		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')',
+		                          'AND ems.`key` = ?',
 		                          [ $this->getModuleDirectoryBaseName(),
 		                            'p' . $this->getProjectId() . '-packcat-' . $catID ] );
 		$infoCat = $queryCat->fetch_assoc();
-		if ( count( $infoCat ) != 1 )
+		if ( ! is_array( $infoCat ) )
 		{
 			return false;
 		}
