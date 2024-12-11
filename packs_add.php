@@ -111,6 +111,11 @@ if ( ! empty( $_POST ) )
 							$infoPack['extrafields'][ substr( $csvField, 2 ) ] = $csvValue;
 						}
 					}
+					if ( ! isset( $infoPack['id'] ) || $infoPack['id'] == '' )
+					{
+						$listErrors[] = ['error_incomplete_data_row'];
+						break;
+					}
 					if ( in_array( $infoPack['id'], $listPackIDs ) )
 					{
 						$listErrors[] = [ 'error_duplicate_pack_id', $infoExistingPack['id'] ];
@@ -141,6 +146,10 @@ if ( ! empty( $_POST ) )
 				}
 				$infoPack['extrafields'][ substr( $packField, 2 ) ] = $packValue;
 			}
+		}
+		if ( ! isset( $infoPack['id'] ) || $infoPack['id'] == '' )
+		{
+			$listErrors[] = ['error_incomplete_data_row'];
 		}
 		$listPacks[] = $infoPack;
 		$listPackIDs[] = $infoPack['id'];

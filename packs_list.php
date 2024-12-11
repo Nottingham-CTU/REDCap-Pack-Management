@@ -182,7 +182,7 @@ if ( isset( $_POST['action'] ) )
 		}
 	}
 	// Mark packs as invalid.
-	if ( $infoCategory['dags'] && $_POST['action'] == 'invalid' )
+	if ( $_POST['action'] == 'invalid' )
 	{
 		$listChosen = json_decode( $_POST['packs'], true );
 		if ( $infoCategory['blocks'] )
@@ -208,7 +208,7 @@ if ( isset( $_POST['action'] ) )
 					}
 				}
 			}
-			if ( ! empty( array_intersect_key( $listValidPacks, $listInvalidPacks ) ) )
+			if ( ! empty( $listValidPacks ) && ! empty( $listInvalidPacks ) )
 			{
 				$listErrors[] = 'mark_unmark_packs_invalid_error';
 			}
@@ -217,7 +217,7 @@ if ( isset( $_POST['action'] ) )
 		{
 			$packsInvalid = empty( $listInvalidPacks );
 			$invalidDesc = trim( str_replace( [ "\r\n", "\r" ], "\n", $_POST['invalid_desc'] ) );
-			// Acknowledge each pack as received.
+			// Mark each pack as (in)valid.
 			$module->dbGetLock();
 			foreach ( $listChosen as $packID )
 			{
