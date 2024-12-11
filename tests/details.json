@@ -1,0 +1,62 @@
+[
+	{
+		"file" : "test_t01Createcategoryviewpacks.py",
+		"name" : "Create category / view packs",
+		"expected" : "Pack category can be created and packs can be viewed only by admins and users with viewing roles",
+		"scenario" : "Create pack category, define roles for management features, confirm only admins and users with viewing roles can view the pack list"
+	},
+	{
+		"file" : "test_t02Addpacks.py",
+		"name" : "Add packs",
+		"expected" : "Packs can be added to a pack category only by admins and users with adding roles",
+		"scenario" : "Create pack category, define roles and confirm only admins and users with adding roles can add new packs"
+	},
+	{
+		"file" : "test_t03AssignpackformsubmitDAG.py",
+		"name" : "Assign pack on form submit (w/DAG)",
+		"expected" : "Packs are assigned to record only when issued to the respective DAG",
+		"scenario" : "Create pack category and confirm packs assigned only when applicable"
+	},
+	{
+		"file" : "test_t04Assignpackformsubmit.py",
+		"name" : "Assign pack on form submit",
+		"expected" : "Packs are assigned once added",
+		"scenario" : "Create pack category and confirm packs assigned only when applicable"
+	},
+	{
+		"file" : "test_t05Assignpackformsubmitexpiry.py",
+		"name" : "Assign pack on form submit (w/expiry)",
+		"expected" : "Packs are assigned only if they are not expired",
+		"scenario" : "Create pack category and confirm packs assigned only when applicable"
+	},
+	{
+		"file" : "test_t06Assignpackformsubmitinvalid.py",
+		"name" : "Assign pack on form submit (w/invalid)",
+		"expected" : "Packs are assigned only if they are not invalid",
+		"scenario" : "Create pack category and confirm packs assigned only when applicable"
+	},
+	{
+		"file" : "test_t07IssuepackstoDAG.py",
+		"name" : "Issue packs to DAG",
+		"expected" : "Packs can be issued to a DAG only by admins and users with issuing roles",
+		"scenario" : "Create pack category, define roles and confirm only admins and users with issuing roles can issue packs to DAGs"
+	},
+	{
+		"file" : "test_t08Markpacksinvalid.py",
+		"name" : "Mark packs as invalid",
+		"expected" : "Packs can be marked invalid only by admins and users with roles for marking invalid",
+		"scenario" : "Create pack category, define roles and confirm only admins and users with roles for marking invalid can mark packs as invalid"
+	},
+	{
+		"file" : "test_t09Assignpackminimization.py",
+		"name" : "Assign pack on minimization",
+		"expected" : "Packs are assigned when requested by the Minimization module, provided the requirements are met",
+		"scenario" : "Create pack category and check the assignment takes place, or not, depending on minimized allocation and settings for handling lack of minimized pack"
+	},
+	{
+		"file" : "test_t10Assignpackautomatic.py",
+		"name" : "Assign pack automatically",
+		"expected" : "Packs are assigned by execution of the cron function",
+		"scenario" : "Create pack category and check the assignment takes place as expected"
+	}
+]
