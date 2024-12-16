@@ -1,0 +1,45 @@
+{
+	"name" : "Pack Management",
+	"tt_name" : "module_name",
+	"namespace" : "Nottingham\\PackManagement",
+	"description" : "Define packs which can be assigned to records.<br>Can be used for treatment packs, vouchers, or anything that is to be assigned to records from a list.<br>Packs can be optionally assigned to DAGs and grouped into blocks.<br>Can be used alongside the Minimization module.",
+	"tt_description" : "module_desc",
+	"authors": [
+		{
+			"name": "Richard Dooley",
+			"email": "richard.dooley@nottingham.ac.uk",
+			"institution": "University of Nottingham"
+		}
+	],
+	"framework-version" : 12,
+	"compatibility" : {
+		"redcap-version-min" : "13.1.28",
+		"php-version-min" : "8.0.0",
+		"php-version-max" : "8.99.99"
+	},
+	"links" : {
+		"project" : [
+			{
+				"name" : "Pack Management: Configure Categories",
+				"tt_name" : "module_link_config",
+				"icon" : "fas fa-boxes-stacked",
+				"url" : "configure.php"
+			},
+			{
+				"name" : "Pack Management: Add/Edit Packs",
+				"tt_name" : "module_link_packs",
+				"icon" : "fas fa-boxes-stacked",
+				"url" : "packs.php"
+			}
+		]
+	},
+	"crons" : [
+		{
+			"cron_name" : "auto_assignment_cron",
+			"cron_description" : "Automatic pack assignment",
+			"method" : "autoAssignmentCron",
+			"cron_frequency" : "600",
+			"cron_max_run_time" : "86400"
+		}
+	]
+}
