@@ -144,6 +144,10 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 	{
 		$startTimestamp = time();
 		$activeProjects = implode( ',', $this->getProjectsWithModuleEnabled() );
+		if ( $activeProjects == '' )
+		{
+			return;
+		}
 		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS id, ' .
 		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.logic\')) AS logic, ' .
 		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) ' .
