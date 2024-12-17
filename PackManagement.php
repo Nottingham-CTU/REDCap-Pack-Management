@@ -340,7 +340,10 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		// If packs expire, prepare to exclude expired packs.
 		if ( $infoCat['expire'] )
 		{
-			$now = date( 'Y-m-d H:i:s', time() + 600 ); // Must be more than 10min until expiry.
+			// Use expire buffer (number of hours), or 10 minutes if buffer = 0;
+			$expireBuffer = $infoCat['expire_buf'] ?? 0;
+			$expireBuffer = ( $expireBuffer == 0 ) ? 600 : ( $expireBuffer * 3600 );
+			$now = date( 'Y-m-d H:i:s', time() + $expireBuffer );
 			$sqlPacks .= ' AND packlist.expiry > ?';
 			$paramsPacks[] = $now;
 		}

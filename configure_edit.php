@@ -58,6 +58,10 @@ else
 			{
 				$infoCategory[ $fieldName ] = ( $_POST[ $fieldName ] == '1' );
 			}
+			elseif ( $fieldName == 'expire_buf' )
+			{
+				$infoCategory[ $fieldName ] = intval( $_POST[ $fieldName ] );
+			}
 			else
 			{
 				$infoCategory[ $fieldName ] = trim( str_replace( "\r\n", "\n",
@@ -100,6 +104,11 @@ else
 		       ! in_array( $infoCategory['nominim'], ['S', 'P'] ) ) ||
 		     $infoCategory['packfield'] == '' ||
 		     ! in_array( $infoCategory['trigger'], ['A', 'F', 'M'] ) )
+		{
+			$hasError = true;
+		}
+		// Check that the expiry buffer is not negative.
+		if ( $infoCategory['expire_buf'] < 0 )
 		{
 			$hasError = true;
 		}
@@ -283,6 +292,14 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
      </select>
     </td>
    </tr>
+   <tr data-pack-expire="1">
+    <td><?php echo $module->tt('packs_expiry_buf'); ?>*</td>
+    <td>
+     <input type="number" min="0" name="expire_buf"
+            value="<?php echo $infoCategory['expire_buf']; ?>" required>
+     <?php echo $module->tt('hours'), "\n"; ?>
+    </td>
+   </tr>
    <tr>
     <td><?php echo $module->tt('pack_id_proj_field'); ?>*</td>
     <td>
@@ -452,6 +469,14 @@ foreach ( $module->getPackFieldTypes() as $typeCode => $typeLabel )
      .attr('data-required', ( vVal == '1' ? null : '1' )).prop('required', vVal == '1')
  } )
  $('[name="dags"]').change()
+ $('[name="expire"]').change( function()
+ {
+   var vVal = $(this).val()
+   $('[data-pack-expire]').css('display', vVal == '1' ? '' : 'none')
+   $('[data-pack-expire] [' + ( vVal == '1' ? 'data-' : '' ) + 'required]')
+     .attr('data-required', ( vVal == '1' ? null : '1' )).prop('required', vVal == '1')
+ } )
+ $('[name="expire"]').change()
  var vFuncAP = function()
  {
    var vFieldNum = $(this).closest('tr').attr('data-additional-field')
