@@ -52,7 +52,8 @@ else
 		// Build the category object from the form submission, begin with the standard options.
 		$infoCategory = [ 'id' => $_GET['cat_id'] ];
 		foreach ( [ 'enabled', 'trigger', 'form', 'logic', 'nominim', 'dags', 'dags_rcpt', 'blocks',
-		            'expire', 'packfield', 'datefield', 'countfield', 'valuefield' ] as $fieldName )
+		            'expire', 'expire_buf', 'packfield', 'datefield', 'countfield', 'valuefield' ]
+		          as $fieldName )
 		{
 			if ( in_array( $fieldName, [ 'enabled', 'dags', 'dags_rcpt', 'blocks', 'expire' ] ) )
 			{
@@ -295,8 +296,8 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
    <tr data-pack-expire="1">
     <td><?php echo $module->tt('packs_expiry_buf'); ?>*</td>
     <td>
-     <input type="number" min="0" name="expire_buf"
-            value="<?php echo $infoCategory['expire_buf']; ?>" required>
+     <input type="number" min="0" name="expire_buf" style="width:10em"
+            value="<?php echo $module->escape( $infoCategory['expire_buf'] ); ?>" required>
      <?php echo $module->tt('hours'), "\n"; ?>
     </td>
    </tr>
