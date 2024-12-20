@@ -83,7 +83,7 @@ class TestT11Packexpirybuffer():
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=configure_edit\"][href*=\"cat_id=packs11\"]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.NAME, "enabled")))
     self.driver.execute_script("$(\'#south\').remove()")
-    self.driver.find_element(By.NAME, "expire_buf").send_keys("5")
+    self.driver.execute_script("$(\'[name=\"expire_buf\"]\').val(\'5\')")
     self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
