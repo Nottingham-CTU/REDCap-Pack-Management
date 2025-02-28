@@ -123,16 +123,19 @@ if ( ! empty( $_POST ) )
 						$listErrors[] = [ 'error_duplicate_pack_id', $infoPack['id'] ];
 						continue;
 					}
-					if ( $infoCategory['expire'] && $infoPack['expiry'] == '' )
+					if ( $infoCategory['expire'] )
 					{
-						$listErrors[] = [ 'error_missing_expiry', $infoPack['id'] ];
-					}
-					elseif ( ! preg_match( '/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' .
-					                       '( ([01][0-9]|2[0-3]):[0-5][0-9])?$/',
-					                       $infoPack['expiry'] ) )
-					{
-						$listErrors[] = [ 'error_invalid_date_time',
-						                  $infoPack['id'], $infoPack['expiry'] ];
+						if ( $infoPack['expiry'] == '' )
+						{
+							$listErrors[] = [ 'error_missing_expiry', $infoPack['id'] ];
+						}
+						elseif ( ! preg_match( '/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|' .
+						                       '3[01])( ([01][0-9]|2[0-3]):[0-5][0-9])?$/',
+						                       $infoPack['expiry'] ) )
+						{
+							$listErrors[] = [ 'error_invalid_date_time',
+							                  $infoPack['id'], $infoPack['expiry'] ];
+						}
 					}
 					$listPacks[] = $infoPack;
 					$listPackIDs[] = $infoPack['id'];
@@ -166,14 +169,18 @@ if ( ! empty( $_POST ) )
 		}
 		else
 		{
-			if ( $infoCategory['expire'] && $infoPack['expiry'] == '' )
+			if ( $infoCategory['expire'] )
 			{
-				$listErrors[] = [ 'error_missing_expiry', $infoPack['id'] ];
-			}
-			elseif ( ! preg_match( '/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' .
-			                       '( ([01][0-9]|2[0-3]):[0-5][0-9])?$/', $infoPack['expiry'] ) )
-			{
-				$listErrors[] = [ 'error_invalid_date_time', $infoPack['id'], $infoPack['expiry'] ];
+				if ( $infoPack['expiry'] == '' )
+				{
+					$listErrors[] = [ 'error_missing_expiry', $infoPack['id'] ];
+				}
+				elseif ( ! preg_match( '/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' .
+				                      '( ([01][0-9]|2[0-3]):[0-5][0-9])?$/', $infoPack['expiry'] ) )
+				{
+					$listErrors[] = [ 'error_invalid_date_time',
+					                  $infoPack['id'], $infoPack['expiry'] ];
+				}
 			}
 		}
 		$listPacks[] = $infoPack;
