@@ -66,6 +66,8 @@ if ( ! empty( $_POST ) )
 				if ( $headerRow )
 				{
 					$listHeaders = $csvLine;
+					$listHeaders[0] = str_replace( chr( 0xEF ) . chr( 0xBB ) . chr( 0xBF ),
+					                               '', $listHeaders[0] );
 					if ( ! in_array( 'id', $listHeaders ) ||
 					     ( $infoCategory['blocks'] && ! in_array( 'block_id', $listHeaders ) ) ||
 					     ( $infoCategory['expire'] && ! in_array( 'expiry', $listHeaders ) ) )
@@ -118,8 +120,19 @@ if ( ! empty( $_POST ) )
 					}
 					if ( in_array( $infoPack['id'], $listPackIDs ) )
 					{
-						$listErrors[] = [ 'error_duplicate_pack_id', $infoExistingPack['id'] ];
+						$listErrors[] = [ 'error_duplicate_pack_id', $infoPack['id'] ];
 						continue;
+					}
+					if ( $infoCategory['expire'] && $infoPack['expiry'] == '' )
+					{
+						$listErrors[] = [ 'error_missing_expiry', $infoPack['id'] ];
+					}
+					elseif ( ! preg_match( '/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' .
+					                       '( ([01][0-9]|2[0-3]):[0-5][0-9])?$/',
+					                       $infoPack['expiry'] ) )
+					{
+						$listErrors[] = [ 'error_invalid_date_time',
+						                  $infoPack['id'], $infoPack['expiry'] ];
 					}
 					$listPacks[] = $infoPack;
 					$listPackIDs[] = $infoPack['id'];
@@ -150,6 +163,18 @@ if ( ! empty( $_POST ) )
 		if ( ! isset( $infoPack['id'] ) || $infoPack['id'] == '' )
 		{
 			$listErrors[] = ['error_incomplete_data_row'];
+		}
+		else
+		{
+			if ( $infoCategory['expire'] && $infoPack['expiry'] == '' )
+			{
+				$listErrors[] = [ 'error_missing_expiry', $infoPack['id'] ];
+			}
+			elseif ( ! preg_match( '/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' .
+			                       '( ([01][0-9]|2[0-3]):[0-5][0-9])?$/', $infoPack['expiry'] ) )
+			{
+				$listErrors[] = [ 'error_invalid_date_time', $infoPack['id'], $infoPack['expiry'] ];
+			}
 		}
 		$listPacks[] = $infoPack;
 		$listPackIDs[] = $infoPack['id'];
