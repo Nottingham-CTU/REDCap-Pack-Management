@@ -132,6 +132,23 @@ foreach ( $listCategories as $infoCategory )
 ?>
 </table>
 
+<p>&nbsp;</p>
+
+<ul>
+ <li>
+  <a href="<?php echo $module->getUrl( 'export.php' ); ?>">
+   <?php echo $module->tt('pack_categories_export'), "\n"; ?>
+  </a>
+ </li>
+ <li>
+  <a href="<?php echo $module->getUrl( 'import.php' ); ?>">
+   <?php echo $module->tt('pack_categories_import'), "\n"; ?>
+  </a>
+ </li>
+</ul>
+
+<p>&nbsp;</p>
+
 <?php
 
 // Display the project footer

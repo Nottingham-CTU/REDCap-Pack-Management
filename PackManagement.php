@@ -511,6 +511,33 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Echo plain text to output (without Psalm taints).
+	// Use only for e.g. JSON or CSV output.
+	function echoText( $text )
+	{
+		$text = htmlspecialchars( $text, ENT_QUOTES | ENT_SUBSTITUTE | ENT_XHTML );
+		$chars = [ '&amp;' => 38, '&quot;' => 34, '&apos;' => 39, '&lt;' => 60, '&gt;' => 62 ];
+		$text = preg_split( '/(&(?>amp|quot|apos|lt|gt);)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE );
+		foreach ( $text as $part )
+		{
+			echo isset( $chars[ $part ] ) ? chr( $chars[ $part ] ) : $part;
+		}
+	}
+
+
+
+	// Escapes text string for inclusion in JavaScript.
+	function escapeJSString( $text )
+	{
+		return '"' . $this->escape( substr( json_encode( (string)$text,
+		                                                 JSON_HEX_QUOT | JSON_HEX_APOS |
+		                                                 JSON_HEX_TAG | JSON_HEX_AMP |
+		                                                 JSON_UNESCAPED_SLASHES ),
+		                                    1, -1 ) ) . '"';
+	}
+
+
+
 	// Export project settings (e.g. for Project Deployment module).
 	public function exportProjectSettings( $projectID )
 	{
