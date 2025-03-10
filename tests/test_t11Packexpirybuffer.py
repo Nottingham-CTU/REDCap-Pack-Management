@@ -66,7 +66,7 @@ class TestT11Packexpirybuffer():
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=packs\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=packs_add\"][href*=\"cat_id=packs11\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href=\"#multiplepacks\"]").click()
-    self.driver.execute_script("expd=new Date();expd.setTime(expd.getTime()+(7*3600000));fd=new FormData($(\'form[enctype=\"multipart/form-data\"]\')[0]);fd.set(\'packs_upload\',new Blob([decodeURIComponent(\'id,expiry%0A1,\')+expd.getFullYear()+\'-\'+(1+expd.getMonth())+\'-\'+expd.getDate()+\' \'+expd.getHours()+\':\'+expd.getMinutes()]));fetch( window.location.href, {body:fd, method:\'post\'})")
+    self.driver.execute_script("expd=new Date();expd.setTime(expd.getTime()+(7*3600000));fd=new FormData($(\'form[enctype=\"multipart/form-data\"]\')[0]);fd.set(\'packs_upload\',new Blob([decodeURIComponent(\'id,expiry%0A1,\')+expd.getFullYear()+\'-\'+(\'0\'+(1+expd.getMonth())).replace(/.*(.{2})$/,\'$1\')+\'-\'+(\'0\'+expd.getDate()).replace(/.*(.{2})$/,\'$1\')+\' \'+(\'0\'+expd.getHours()).replace(/.*(.{2})$/,\'$1\')+\':\'+(\'0\'+expd.getMinutes()).replace(/.*(.{2})$/,\'$1\')]));fetch( window.location.href, {body:fd, method:\'post\'})")
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=visit_lab_data\"]").click()
     self.driver.execute_script("$(\'#south\').remove();dataEntrySubmit(\'submit-btn-savecontinue\')")
