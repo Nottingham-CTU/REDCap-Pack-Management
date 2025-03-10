@@ -13,6 +13,7 @@ if ( ! $module->canConfigure() )
 
 
 $projectID = $module->getProjectID();
+$canDelete = ( $module->isSuperUser() || $module->getProjectStatus() == 'DEV' );
 
 
 $mode = 'upload';
@@ -179,13 +180,18 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 			elseif ( substr( $key, 0, 11 ) == 'cat-delete-' )
 			{
 				// Remove category from project.
-				$categoryID = substr( $key, 11 );
-				$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packcat-' .
-				                              $categoryID );
-				$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packlist-' .
-				                              $categoryID );
-				$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packlog-' .
-				                              $categoryID );
+				if ( $canDelete )
+				{
+					$categoryID = substr( $key, 11 );
+					$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packcat-' .
+					                              $categoryID );
+					$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packlist-' .
+					                              $categoryID );
+					$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packlog-' .
+					                              $categoryID );
+					$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packcatats-' .
+					                              $categoryID );
+				}
 			}
 		}
 		$module->dbReleaseLock();
@@ -417,8 +423,15 @@ elseif ( $mode == 'verify' )
   <tr>
    <td><?php echo $module->escape( $categoryID ); ?></td>
    <td>
+<?php
+			if ( $canDelete )
+			{
+?>
     <input type="checkbox" name="cat-delete-<?php
 			echo $module->escape( $categoryID ); ?>" value="1">
+<?php
+			}
+?>
     <?php echo $module->tt('pack_categories_import_delete'), "\n"; ?>
     <ul>
 <?php
@@ -457,7 +470,8 @@ elseif ( $mode == 'verify' )
 <?php
 		}
 	}
-	if ( ! empty( $listNew ) || ! empty( $listChanged ) || ! empty( $listDeleted ) )
+	if ( ! empty( $listNew ) || ! empty( $listChanged ) ||
+	     ( $canDelete && ! empty( $listDeleted ) ) )
 	{
 ?>
   <tr>

@@ -12,6 +12,7 @@ if ( ! $module->canConfigure() )
 // Set default values for category configuration, or load from an existing entry / form submission.
 $new = ( ( $_POST['action'] ?? '' ) == 'new' );
 $hasError = false;
+$canDelete = ! $new && ( $module->isSuperUser() || $module->getProjectStatus() == 'DEV' );
 if ( $new )
 {
 	if ( $module->getSystemSetting( 'p' . $module->getProjectId() . '-packcat-' .
@@ -46,6 +47,66 @@ else
 			header( 'Location: ' . $module->getUrl( 'configure.php' ) );
 			exit;
 		}
+	}
+	elseif ( isset( $_POST['cat_delete'] ) )
+	{
+		if ( $canDelete )
+		{
+			$module->dbGetLock();
+			$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packcat-' .
+			                              $_GET['cat_id'] );
+			$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packlist-' .
+			                              $_GET['cat_id'] );
+			$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packlog-' .
+			                              $_GET['cat_id'] );
+			$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packcatats-' .
+			                              $_GET['cat_id'] );
+			$module->dbReleaseLock();
+		}
+		header( 'Location: ' . $module->getUrl( 'configure.php' ) );
+		exit;
+	}
+	elseif ( isset( $_POST['cat_reset'] ) )
+	{
+		if ( $canDelete )
+		{
+			$module->dbGetLock();
+			$listReset = $module->query( 'SELECT JSON_SEARCH( ems.`value`, \'all\', \'CAT\\_%\', ' .
+			                             '\'\\\\\', \'$[*].event\' ) val ' .
+			                             'FROM redcap_external_module_settings ems ' .
+			                             'JOIN redcap_external_modules em ' .
+			                             'ON ems.external_module_id = em.external_module_id ' .
+			                             'WHERE em.directory_prefix = ? AND ems.`key` = ?',
+			                             [ $module->getModuleDirectoryBaseName(),
+			                               'p' . $module->getProjectId() . '-packlog-' .
+			                               $_GET['cat_id'] ] )->fetch_assoc()['val'];
+			$listReset = json_decode( $listReset, true );
+			if ( ! is_array( $listReset ) )
+			{
+				$listReset = [ $listReset ];
+			}
+			$resetSQL = 'SELECT JSON_EXTRACT( ems.`value`';
+			$resetParams = [];
+			foreach ( $listReset as $itemReset )
+			{
+				$resetSQL .= ', ?';
+				$resetParams[] = str_replace( '.event', '', $itemReset );
+			}
+			$resetSQL .= ' ) val FROM redcap_external_module_settings ems ' .
+			             'JOIN redcap_external_modules em ' .
+			             'ON ems.external_module_id = em.external_module_id ' .
+			             'WHERE em.directory_prefix = ? AND ems.`key` = ?';
+			$resetParams[] = $module->getModuleDirectoryBaseName();
+			$resetParams[] = 'p' . $module->getProjectId() . '-packlog-' . $_GET['cat_id'];
+			$resetLog = $module->query( $resetSQL, $resetParams )->fetch_assoc()['val'];
+			$module->setSystemSetting( 'p' . $module->getProjectId() . '-packlist-' .
+			                           $_GET['cat_id'], '[]' );
+			$module->setSystemSetting( 'p' . $module->getProjectId() . '-packlog-' .
+			                           $_GET['cat_id'], $resetLog );
+			$module->dbReleaseLock();
+		}
+		header( 'Location: ' . $module->getUrl( 'configure.php' ) );
+		exit;
 	}
 	else
 	{
@@ -89,6 +150,10 @@ else
 			$extraFieldCount++;
 		}
 		ksort( $infoCategory['extrafields'] );
+		if ( empty( $infoCategory['extrafields'] ) )
+		{
+			$infoCategory['extrafields'] = new \stdClass;
+		}
 		// Parse the role lists.
 		foreach ( [ 'roles_view', 'roles_dags', 'roles_invalid', 'roles_assign',
 		            'roles_add', 'roles_edit' ] as $fieldName )
@@ -437,6 +502,25 @@ foreach ( $module->getPackFieldTypes() as $typeCode => $typeLabel )
   </tbody>
  </table>
 </form>
+<?php
+if ( $canDelete )
+{
+?>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<form method="post">
+ <p style="display:flex;justify-content:space-evenly;max-width:97%">
+  <button type="submit" name="cat_reset" value="1" class="btn btn-sm btn-rcred">
+   <i class="fas fa-backspace fs14"></i> &nbsp;<?php echo $module->tt('pack_cat_reset'), "\n"; ?>
+  </button>
+  <button type="submit" name="cat_delete" value="1" class="btn btn-sm btn-danger">
+   <i class="fas fa-trash fs14"></i> &nbsp;<?php echo $module->tt('pack_cat_delete'), "\n"; ?>
+  </button>
+ </p>
+</form>
+<?php
+}
+?>
 <script type="text/javascript">
  $('[name="trigger"]').change( function()
  {
@@ -533,6 +617,33 @@ echo $module->escape( json_encode( $infoCategory['extrafields'] ) ); ?>').text()
    $('[name="f' + (i + 1) + '_field"]').val( vExtraField.field )
    $('[name="f' + (i + 1) + '_name"]').change()
  }
+ var vIsDelete = false
+ $('button[name="cat_reset"]').on('click', function( event )
+ {
+   if ( vIsDelete )
+   {
+     return
+   }
+   event.preventDefault()
+   simpleDialog( "<?php echo $module->tt('pack_cat_reset_confirm'); ?>",
+                 "<?php echo $module->tt('pack_cat_reset'); ?>", null, null, null,
+                 "<?php echo $module->tt('opt_cancel'); ?>",
+                 function() { vIsDelete = true; $('button[name="cat_reset"]').trigger('click') },
+                 "<?php echo $module->tt('pack_cat_reset'); ?>" )
+ })
+ $('button[name="cat_delete"]').on('click', function( event )
+ {
+   if ( vIsDelete )
+   {
+     return
+   }
+   event.preventDefault()
+   simpleDialog( "<?php echo $module->tt('pack_cat_delete_confirm'); ?>",
+                 "<?php echo $module->tt('pack_cat_delete'); ?>", null, null, null,
+                 "<?php echo $module->tt('opt_cancel'); ?>",
+                 function() { vIsDelete = true; $('button[name="cat_delete"]').trigger('click') },
+                 "<?php echo $module->tt('pack_cat_delete'); ?>" )
+ })
 </script>
 <?php
 
