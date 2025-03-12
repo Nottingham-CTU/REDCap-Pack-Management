@@ -298,7 +298,8 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 	// Choose a pack from the specified pack category and mark it as assigned.
-	public function choosePack( $catID, $recordID, $value = null, $reqPackValues = null )
+	public function choosePack( $catID, $recordID, $value = null, $reqPackValues = null,
+	                            $packID = null, $ignoreExpiry = false )
 	{
 		$this->dbGetLock();
 		// Get the pack category details.
@@ -338,7 +339,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			$paramsPacks[] = $infoDAG['dag'];
 		}
 		// If packs expire, prepare to exclude expired packs.
-		if ( $infoCat['expire'] )
+		if ( ! $ignoreExpiry && $infoCat['expire'] )
 		{
 			// Use expire buffer (number of hours), or 10 minutes if buffer = 0;
 			$expireBuffer = $infoCat['expire_buf'] ?? 0;
@@ -352,6 +353,12 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		{
 			$sqlPacks2 .= ' AND value = ?';
 			$paramsPacks[] = $value;
+		}
+		// If a specific pack ID is required, prepare to filter by it.
+		if ( $packID !== null )
+		{
+			$sqlPacks2 .= ' AND id = ?';
+			$paramsPacks[] = $packID;
 		}
 		// If a required pack value does not exist amongst the available packs, return 0 rows.
 		if ( $reqPackValues !== null && is_array( $reqPackValues ) )
@@ -388,7 +395,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		{
 			// Use the 1st pack returned 67% of the time, 2nd pack 22%, 3rd pack 11%.
 			$infoPack = $nextPack;
-			if ( random_int( 0, 2 ) > 0 )
+			if ( $packID !== null || random_int( 0, 2 ) > 0 )
 			{
 				break;
 			}
@@ -861,7 +868,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 				$newData[ $recordID ][ $eventID ][ $fieldName ] = $value;
 			}
 		}
-		$result = \REDCap::saveData( $projectID, 'array', $newData, 'normal', 'YMD' );
+		$result = \REDCap::saveData( $projectID, 'array', $newData, 'overwrite', 'YMD' );
 		return empty( $result['errors'] );
 	}
 
