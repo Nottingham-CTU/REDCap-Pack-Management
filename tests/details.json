@@ -58,5 +58,17 @@
 		"name" : "Assign pack automatically",
 		"expected" : "Packs are assigned by execution of the cron function",
 		"scenario" : "Create pack category and check the assignment takes place as expected"
+	},
+	{
+		"file" : "test_t11Packexpirybuffer.py",
+		"name" : "Pack expiry buffer",
+		"expected" : "Packs which have not expired but are closer to expiry than the buffer are treated as expired and are not assigned",
+		"scenario" : "Create pack category with an expiry buffer, add a pack which expires within the buffer and ensure it is not assigned. Then reduce the expiry buffer so the pack does not expire within the buffer and ensure it can now be assigned."
+	},
+	{
+		"file" : "test_t12Manualreassignment.py",
+		"name" : "Manual reassignment",
+		"expected" : "Packs can be manually assigned, unassigned, reassigned and exchanged by users with the manual reassignment roles",
+		"scenario" : "Create pack category, define roles and confirm packs can be manually assigned, unassigned, reassigned and exchanged (and that pack fields are swapped out in the record data as expected) only by admins and users with roles for manual reassignemnt."
 	}
 ]
