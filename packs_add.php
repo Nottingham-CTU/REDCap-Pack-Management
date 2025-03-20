@@ -171,6 +171,7 @@ if ( ! empty( $_POST ) )
 		{
 			if ( $infoCategory['expire'] )
 			{
+				$infoPack['expiry'] = str_replace( 'T', ' ', $infoPack['expiry'] );
 				if ( $infoPack['expiry'] == '' )
 				{
 					$listErrors[] = [ 'error_missing_expiry', $infoPack['id'] ];
@@ -278,80 +279,7 @@ if ( ! empty( $_POST ) )
      <td><?php echo $module->tt('packfield_id'); ?> *</td>
      <td><input type="text" name="id" required></td>
     </tr>
-    <tr>
-<?php
-if ( $infoCategory['trigger'] == 'M' || $infoCategory['valuefield'] != '' )
-{
-?>
-     <td><?php echo $module->tt( 'packfield_value' .
-                                 ( $infoCategory['trigger'] == 'M' ? '_minim' : '' ) ); ?> *</td>
-     <td><input type="text" name="value" required></td>
-<?php
-}
-else
-{
-?>
-     <td><?php echo $module->tt( 'packfield_value' ); ?></td>
-     <td><input type="text" name="value"></td>
-<?php
-}
-?>
-    </tr>
-<?php
-if ( $infoCategory['blocks'] )
-{
-?>
-    <tr>
-     <td><?php echo $module->tt('packfield_block_id'); ?> *</td>
-     <td><input type="text" name="block_id" required></td>
-    </tr>
-<?php
-}
-?>
-<?php
-if ( $infoCategory['expire'] )
-{
-?>
-    <tr>
-     <td><?php echo $module->tt('packfield_expiry'); ?> *</td>
-     <td><input type="datetime-local" name="expiry" required></td>
-    </tr>
-<?php
-}
-foreach ( $infoCategory['extrafields'] as $extraFieldName => $infoExtraField )
-{
-	$extraFieldLabel = $module->escape( $infoExtraField['label'] );
-	$extraFieldType = '"text"';
-	if ( $infoExtraField['type'] == 'date' )
-	{
-		$extraFieldType = '"date"';
-	}
-	elseif ( $infoExtraField['type'] == 'datetime' )
-	{
-		$extraFieldType = '"datetime-local"';
-	}
-	elseif ( $infoExtraField['type'] == 'integer' )
-	{
-		$extraFieldType = '"number"';
-	}
-	elseif ( $infoExtraField['type'] == 'time' )
-	{
-		$extraFieldType = '"time"';
-	}
-	if ( $infoExtraField['required'] )
-	{
-		$extraFieldLabel .= ' *';
-		$extraFieldType .= ' required';
-	}
-?>
-    <tr>
-     <td><?php echo $extraFieldLabel; ?></td>
-     <td><input type=<?php echo $extraFieldType; ?>
-                name="f_<?php echo $module->escape( $extraFieldName ); ?>"></td>
-    </tr>
-<?php
-}
-?>
+<?php $module->writePackFields( $infoCategory ); ?>
     <tr>
      <td></td>
      <td><input type="submit" value="<?php echo $module->tt('save'); ?>"></td>

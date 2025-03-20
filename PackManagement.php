@@ -518,6 +518,21 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Delete a pack.
+	public function deletePack( $projectID, $catID, $packID )
+	{
+		$sql = 'UPDATE redcap_external_module_settings ems SET ems.value = JSON_REMOVE(ems.value' .
+		       ',REPLACE(JSON_UNQUOTE(JSON_SEARCH(ems.value,\'one\',?,NULL,\'$[*].id\')),' .
+		       '\'.id\',\'\')) WHERE ems.external_module_id = (SELECT em.external_module_id ' .
+		        'FROM redcap_external_modules em WHERE em.directory_prefix = ? LIMIT 1) ' .
+		        'AND ems.key = ? AND JSON_CONTAINS( JSON_EXTRACT( ems.value, \'$[*].id\' ), ? )';
+		$sqlParams = [ $packID, $this->getModuleDirectoryBaseName(),
+		               'p' . $projectID . '-packlist-' . $catID, json_encode( $packID ) ];
+		$this->query( $sql, $sqlParams );
+	}
+
+
+
 	// Echo plain text to output (without Psalm taints).
 	// Use only for e.g. JSON or CSV output.
 	function echoText( $text )
@@ -785,6 +800,20 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Make the SQL query clause to get a packlog table.
+	public function makePacklogSQL( $source )
+	{
+		return ' JSON_TABLE(' . $source . ',\'$[*]\' ' .
+		       'COLUMNS( event TEXT PATH \'$.event\', ' .
+		                'user TEXT PATH \'$.user\' DEFAULT \'""\' ON EMPTY, ' .
+		                'time DATETIME PATH \'$.time\', ' .
+		                'data JSON PATH \'$.data\' DEFAULT \'[]\' ON EMPTY, ' .
+		                'id TEXT PATH \'$.data.id\' DEFAULT \'""\' ON EMPTY ' .
+		       ') ) AS packlog ';
+	}
+
+
+
 	// Update the log for a pack category with a new entry.
 	public function updatePackLog( $projectID, $catID, $logEvent, $logData )
 	{
@@ -874,6 +903,108 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Output the pack add/edit form fields.
+	public function writePackFields( $infoCategory, $infoPack = null )
+	{
+?>
+    <tr>
+<?php
+		$v = '';
+		if ( $infoPack !== null )
+		{
+			$v = ' value="' . $this->escape( $infoPack['value'] ) . '"';
+		}
+		if ( $infoCategory['trigger'] == 'M' || $infoCategory['valuefield'] != '' )
+		{
+?>
+     <td><?php echo $this->tt( 'packfield_value' .
+                                 ( $infoCategory['trigger'] == 'M' ? '_minim' : '' ) ); ?> *</td>
+     <td><input type="text" name="value"<?php echo $v; ?> required></td>
+<?php
+		}
+		else
+		{
+?>
+     <td><?php echo $this->tt( 'packfield_value' ); ?></td>
+     <td><input type="text" name="value"<?php echo $v; ?>></td>
+<?php
+		}
+?>
+    </tr>
+<?php
+		if ( $infoCategory['blocks'] )
+		{
+			$v = '';
+			if ( $infoPack !== null )
+			{
+				$v = ' value="' . $this->escape( $infoPack['block_id'] ) . '"';
+			}
+?>
+    <tr>
+     <td><?php echo $this->tt('packfield_block_id'); ?> *</td>
+     <td><input type="text" name="block_id"<?php echo $v; ?> required></td>
+    </tr>
+<?php
+		}
+?>
+<?php
+		if ( $infoCategory['expire'] )
+		{
+			$v = '';
+			if ( $infoPack !== null )
+			{
+				$v = ' value="' . $this->escape( $infoPack['expiry'] ) . '"';
+			}
+?>
+    <tr>
+     <td><?php echo $this->tt('packfield_expiry'); ?> *</td>
+     <td><input type="datetime-local" name="expiry"<?php echo $v; ?> required></td>
+    </tr>
+<?php
+		}
+		foreach ( $infoCategory['extrafields'] as $extraFieldName => $infoExtraField )
+		{
+			$v = '';
+			if ( $infoPack !== null )
+			{
+				$v = ' value="' .
+				     $this->escape( $infoPack['extrafields'][ $extraFieldName ] ) . '"';
+			}
+			$extraFieldLabel = $this->escape( $infoExtraField['label'] );
+			$extraFieldType = '"text"';
+			if ( $infoExtraField['type'] == 'date' )
+			{
+				$extraFieldType = '"date"';
+			}
+			elseif ( $infoExtraField['type'] == 'datetime' )
+			{
+				$extraFieldType = '"datetime-local"';
+			}
+			elseif ( $infoExtraField['type'] == 'integer' )
+			{
+				$extraFieldType = '"number"';
+			}
+			elseif ( $infoExtraField['type'] == 'time' )
+			{
+				$extraFieldType = '"time"';
+			}
+			if ( $infoExtraField['required'] )
+			{
+				$extraFieldLabel .= ' *';
+				$extraFieldType .= ' required';
+			}
+?>
+    <tr>
+     <td><?php echo $extraFieldLabel; ?></td>
+     <td><input type=<?php echo $extraFieldType, $v, "\n"; ?>
+                name="f_<?php echo $this->escape( $extraFieldName ); ?>"></td>
+    </tr>
+<?php
+		}
+	}
+
+
+
 	// CSS style for Pack Management pages.
 	public function writeStyle()
 	{
@@ -901,7 +1032,8 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 				text-align:right;
 				vertical-align: top;
 			}
-			.mod-packmgmt-formtable input:not([type=submit]):not([type=radio]):not([type=checkbox])
+			.mod-packmgmt-formtable
+			 input:not([type=submit]):not([type=button]):not([type=radio]):not([type=checkbox])
 			{
 				width: 95%;
 				max-width: 600px;

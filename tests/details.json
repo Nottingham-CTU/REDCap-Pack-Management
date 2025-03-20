@@ -70,5 +70,11 @@
 		"name" : "Manual reassignment",
 		"expected" : "Packs can be manually assigned, unassigned, reassigned and exchanged by users with the manual reassignment roles",
 		"scenario" : "Create pack category, define roles and confirm packs can be manually assigned, unassigned, reassigned and exchanged (and that pack fields are swapped out in the record data as expected) only by admins and users with roles for manual reassignemnt."
+	},
+	{
+		"file" : "test_t13Editanddeletepacks.py",
+		"name" : "Edit and delete packs",
+		"expected" : "Packs can be edited and deleted by users with the edit and delete roles",
+		"scenario" : "Create pack category, define roles and confirm packs can be edited and deleted only by admins and users with roles for editing and deleting."
 	}
 ]

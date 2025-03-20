@@ -643,7 +643,22 @@ foreach ( $listPacks as $infoPack )
              title="<?php echo $module->tt('tooltip_chkbx_shift'); ?>">
   </td>
   <td>
-   <?php echo $module->escape( $infoPack['id'] ), "\n"; ?>
+<?php
+	echo '   ';
+	if ( $canConfigure || in_array( $roleName, $infoCategory['roles_edit'] ) )
+	{
+		echo '<a style="text-decoration:underline dotted" ' .
+		     'title="', $module->tt('edit_pack'), '" href="',
+		     $module->getUrl( 'packs_edit.php?cat_id=' . $infoCategory['id'] .
+		                      '&pack_id=' . $infoPack['id'] ), '">';
+	}
+	echo $module->escape( $infoPack['id'] );
+	if ( $canConfigure || in_array( $roleName, $infoCategory['roles_edit'] ) )
+	{
+		echo '</a>';
+	}
+	echo "\n";
+?>
    <span style="float:right">
     <?php echo $infoPack['assigned'] ? ( '<i class="far fa-square-check" title="' .
                                          $module->tt('tooltip_pack_assigned') . '&#10;' .
