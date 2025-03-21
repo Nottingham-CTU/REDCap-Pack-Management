@@ -96,7 +96,11 @@ $queryPacks = $module->query( 'SELECT id, block_id, packlist.value, expiry, dag,
                               'FROM redcap_external_module_settings ems, redcap_external_modules ' .
                               'em, ' . $module->makePacklistSQL('ems.value') .
                               'WHERE em.external_module_id = ems.external_module_id ' .
-                              'AND em.directory_prefix = ? AND ems.key = ?',
+                              'AND em.directory_prefix = ? AND ems.key = ? ' .
+                              'ORDER BY expiry, if( block_id RLIKE \'^[0-9]{1,20}$\', ' .
+                              'right(concat(\'00000000000000000000\',block_id),20), block_id ), ' .
+                              'if( id RLIKE \'^[0-9]{1,20}$\', right(concat(' .
+                              '\'00000000000000000000\',id),20), id )',
                              [ $module->getModuleDirectoryBaseName(),
                               'p' . $module->getProjectId() . '-packlist-' . $infoCategory['id'] ]);
 $listPacks = [];
@@ -408,7 +412,9 @@ if ( isset( $_POST['action'] ) )
 				{
 					// Get a pack as if it was being assigned normally, but using the specific pack
 					// ID and allowing expired packs to be chosen.
-					$infoData = $module->choosePack( $infoCategory['id'], $_POST['record_id'], null,
+					$infoData = $infoPackAssignment === false ? false :
+					            $module->choosePack( $infoCategory['id'],
+					                                 $infoPackAssignment['record'], null,
 					                                 null, $listUnassignedPacks[0]['id'], true );
 					if ( $infoData !== false )
 					{
@@ -447,7 +453,7 @@ if ( isset( $_POST['action'] ) )
 				if ( count( $listAssignedPacks ) == 1 && $infoData !== false )
 				{
 					// Blank out the pack fields on the record unless this is a pack exchange.
-					if ( empty( $listUnassignedPacks ) )
+					if ( empty( $listUnassignedPacks ) && $infoPackAssignment !== false )
 					{
 						$infoData = [];
 						foreach ( $listPackFields as $packField )
@@ -592,12 +598,58 @@ if ( isset( $_SESSION['pack_management_listerrors'] ) )
  <?php echo $module->tt('total_packs'), ' ', $totalPacks, '<br>',
             $module->tt('available_packs'), ' ', $availablePacks, '<br>',
             $module->tt('assigned_packs'), ' ', $assignedPacks,
-            $invalidPacks == 0 ? '' : ( '<br>' . $module->tt('invalid_packs') . $invalidPacks ),
-            $expiredPacks == 0 ? '' : ( '<br>' . $module->tt('expired_packs') . $expiredPacks ); ?>
+            $invalidPacks == 0 ? '' : ( '<br>' . $module->tt('invalid_packs') .
+                                        ' ' . $invalidPacks ),
+            $expiredPacks == 0 ? '' : ( '<br>' . $module->tt('expired_packs') .
+                                        ' ' . $expiredPacks ); ?>
 
 </p>
 
-<table class="mod-packmgmt-listtable">
+<div style="display:flex;column-gap:15px;max-width:97%">
+ <p style="white-space:nowrap"><?php echo $module->tt('sh_label'); ?></p>
+ <p style="display:flex;justify-content:flex-start;flex-wrap:wrap;column-gap:15px;max-width:unset">
+  <a href="#" data-tblfilter=".pack-col-assign">
+   <i class="far fa-eye"></i> <?php echo $module->tt('sh_assignment'), "\n"; ?>
+  </a>
+  <a href="#" data-tblfilter="tr:has(input[data-assigned=&quot;true&quot;])">
+   <i class="far fa-eye"></i> <?php echo $module->tt('sh_assigned'), "\n"; ?>
+  </a>
+  <a href="#" data-tblfilter="tr:has(input[data-assigned=&quot;false&quot;])">
+   <i class="far fa-eye"></i> <?php echo $module->tt('sh_unassigned'), "\n"; ?>
+  </a>
+<?php
+if ( $infoCategory['dags'] && $infoCategory['dags_rcpt'] )
+{
+?>
+  <a href="#" data-tblfilter="tr:has(input[data-dag-rcpt=&quot;false&quot;])">
+   <i class="far fa-eye"></i> <?php echo $module->tt('sh_intransit'), "\n"; ?>
+  </a>
+  <a href="#" data-tblfilter="tr:has(input[data-dag-rcpt=&quot;true&quot;])">
+   <i class="far fa-eye"></i> <?php echo $module->tt('sh_notintransit'), "\n"; ?>
+  </a>
+<?php
+}
+if ( $expiredPacks > 0 )
+{
+?>
+  <a href="#" data-tblfilter="tr:has(input[data-expired=&quot;true&quot;])">
+   <i class="far fa-eye"></i> <?php echo $module->tt('sh_expired'), "\n"; ?>
+  </a>
+<?php
+}
+if ( $invalidPacks > 0 )
+{
+?>
+  <a href="#" data-tblfilter="tr:has(input[data-invalid=&quot;true&quot;])">
+   <i class="far fa-eye"></i> <?php echo $module->tt('sh_invalid'), "\n"; ?>
+  </a>
+<?php
+}
+?>
+ </p>
+</div>
+
+<table class="mod-packmgmt-listtable" style="opacity:0;border-width:2px">
  <tr>
   <th style="width:45px"></th>
   <th><?php echo $module->tt('packfield_id'); ?></th>
@@ -621,6 +673,7 @@ if ( $infoCategory['expire'] )
 <?php
 }
 ?>
+  <th class="pack-col-assign"><?php echo $module->tt('assignment'); ?></th>
  </tr>
 <?php
 $row = 0;
@@ -629,6 +682,7 @@ foreach ( $listPacks as $infoPack )
 	$packAssigned = $infoPack['assigned']
 	                ? $module->getPackAssignedRecord( $infoCategory['id'], $infoPack['id'] )
 	                : false;
+	$packExpired = ( $infoPack['expiry'] != '' && $infoPack['expiry'] < date('Y-m-d H:i:s') );
 
 ?>
  <tr>
@@ -640,6 +694,7 @@ foreach ( $listPacks as $infoPack )
              data-invalid="<?php echo $infoPack['invalid'] ? 'true' : 'false'; ?>"
              data-dag="<?php echo $module->escape( $infoPack['dag'] ?? '' ); ?>"
              data-dag-rcpt="<?php echo $infoPack['dag_rcpt'] ? 'true' : 'false'; ?>"
+             data-expired="<?php echo $packExpired ? 'true' : 'false'; ?>"
              title="<?php echo $module->tt('tooltip_chkbx_shift'); ?>">
   </td>
   <td>
@@ -661,8 +716,7 @@ foreach ( $listPacks as $infoPack )
 ?>
    <span style="float:right">
     <?php echo $infoPack['assigned'] ? ( '<i class="far fa-square-check" title="' .
-                                         $module->tt('tooltip_pack_assigned') . '&#10;' .
-                                         $module->escape( $packAssigned['record'] ) . '"></i>' )
+                                         $module->tt('tooltip_pack_assigned') . '"></i>' )
                                      : ''; ?>
     <?php echo $infoPack['invalid'] ? ( '<i class="fas fa-ban" title="' .
                                         $module->escape( $infoPack['invalid_desc'] ) .
@@ -691,6 +745,21 @@ foreach ( $listPacks as $infoPack )
 <?php
 	}
 ?>
+  <td class="pack-col-assign"><?php
+	if ( $packAssigned !== false )
+	{
+		echo $module->escape( $packAssigned['record'] ), ' (';
+		if ( ! empty( $listEvents ) )
+		{
+			echo $module->escape( $listEvents[ $packAssigned['event'] ] ), ', ';
+		}
+		echo $module->tt('instance'), ' ', intval( $packAssigned['instance'] ), ')';
+	}
+	elseif ( $infoPack['assigned'] )
+	{
+		echo '<i>', $module->tt('no_record'), '</i>';
+	}
+?></td>
  </tr>
 <?php
 }
@@ -717,7 +786,7 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_view'] ) &&
 	{
 ?>
 <form method="post" class="packmgmt-packrcpt">
- <table class="mod-packmgmt-formtable" style="margin-bottom:5px">
+ <table class="mod-packmgmt-formtable" style="margin-bottom:10px">
   <tr>
    <th colspan="2"><?php echo $module->tt('mark_packs_rcpt'); ?></th>
   </tr>
@@ -744,7 +813,7 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_view'] ) &&
 	{
 ?>
 <form method="post" class="packmgmt-packissue">
- <table class="mod-packmgmt-formtable" style="margin-bottom:5px">
+ <table class="mod-packmgmt-formtable" style="margin-bottom:10px">
   <tr>
    <th colspan="2"><?php echo $module->tt('issue_unissue_packs'); ?></th>
   </tr>
@@ -786,7 +855,7 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_view'] ) &&
 	{
 ?>
 <form method="post" class="packmgmt-packinvalid">
- <table class="mod-packmgmt-formtable" style="margin-bottom:5px">
+ <table class="mod-packmgmt-formtable" style="margin-bottom:10px">
   <tr>
    <th colspan="2"><?php echo $module->tt('mark_unmark_packs_invalid'); ?></th>
   </tr>
@@ -818,7 +887,7 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_view'] ) &&
 	{
 ?>
 <form method="post" class="packmgmt-packassign">
- <table class="mod-packmgmt-formtable" style="margin-bottom:5px">
+ <table class="mod-packmgmt-formtable" style="margin-bottom:10px">
   <tr>
    <th colspan="2"><?php echo $module->tt('assign_reassign_packs'); ?></th>
   </tr>
@@ -900,8 +969,29 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_view'] ) &&
 <script type="text/javascript">
 $(function()
 {
+  $('[data-tblfilter]').each(function()
+  {
+    var vSelector = $(this).attr('data-tblfilter')
+    $(this).on('click', function( ev )
+    {
+      ev.preventDefault()
+      $(vSelector).css('display', $(vSelector).css('display') == 'none' ? '' : 'none')
+      $(this).find('i').attr('class', 'far fa-eye' + ( $(vSelector).css('display') == 'none'
+                                                       ? '-slash' : '' ) )
+    })
+  })
+  $('[data-tblfilter=".pack-col-assign"]').trigger('click')
+  $('.mod-packmgmt-listtable').css('opacity','')
   var vLastChecked = 0
   var vMultiCheck = false
+  $(document).on('keyup', function( event )
+  {
+    if ( event.key == 'Shift' )
+    {
+      vMultiCheck = false
+      vLastChecked = 0
+    }
+  })
   $('[data-pack-chkbx]').on('click', function( event )
   {
     var vCB = $(this)
@@ -934,7 +1024,8 @@ $(function()
              $('[data-pack-chkbx]:checked').map(function(){return $(this).attr('data-block-id')})
              .filter($('[data-pack-chkbx]:not(:checked)').map(function(){return $(this)
              .attr('data-block-id')})).get().length == 0 ) &&
-           $('[data-dag-rcpt="true"]:checked').length == 0 )
+           $('[data-dag-rcpt="true"]:checked').length == 0 &&
+           $('[data-pack-chkbx]:checked').length > 0 )
       {
         $('.packmgmt-packrcpt .errmsg').css('display','none')
         $('.packmgmt-packrcpt input, .packmgmt-packrcpt select').prop('disabled',false)
@@ -976,7 +1067,8 @@ $(function()
       $('.packmgmt-packinvalid .desclbl').text("<?php echo $module->tt('mark_invalid_reason'); ?>")
       if ( $('[data-assigned="true"]:checked').length == 0 &&
            ( $('[data-invalid="true"]:checked').length == 0 ||
-             $('[data-invalid="false"]:checked').length == 0 ) )
+             $('[data-invalid="false"]:checked').length == 0 ) &&
+           $('[data-pack-chkbx]:checked').length > 0 )
       {
         $('.packmgmt-packinvalid .errmsg').css('display','none')
         $('.packmgmt-packinvalid input, .packmgmt-packinvalid textarea').prop('disabled',false)
