@@ -490,7 +490,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 	// Assign a minimization pack as requested by the Minimization module.
-	public function assignMinimPack( $recordID, $listMinimCodes, $minimField = '', $packID = null )
+	public function assignMinimPack( $recordID, $listMinimCodes, $randoField = '', $packID = null )
 	{
 		$this->dbGetLock();
 		// Get pack category for minimization field.
@@ -506,7 +506,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                          'AND JSON_CONTAINS(`value`,?,\'$.valuefield\')',
 		                          [ $this->getModuleDirectoryBaseName(),
 		                            'p' . $this->getProjectId() . '-packcat-%',
-		                            json_encode( $minimField ) ] );
+		                            json_encode( $randoField ) ] );
 		$infoCat = $queryCat->fetch_assoc();
 		if ( empty( $infoCat ) )
 		{
@@ -935,7 +935,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 	// Get the minimization pack project field.
-	public function getMinimPackField( $minimField = '' )
+	public function getMinimPackField( $randoField = '' )
 	{
 		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) AS ' .
 		                          'packfield FROM redcap_external_module_settings ems JOIN ' .
@@ -947,7 +947,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                          'AND JSON_CONTAINS(`value`,?,\'$.valuefield\')',
 		                          [ $this->getModuleDirectoryBaseName(),
 		                            'p' . $this->getProjectId() . '-packcat-%',
-		                            json_encode( $minimField ) ] );
+		                            json_encode( $randoField ) ] );
 		$infoCat = $queryCat->fetch_assoc();
 		return $infoCat ? $infoCat['packfield'] : null;
 	}
@@ -1189,16 +1189,18 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 	// Check if a minimization pack category exists.
-	public function hasMinimPackCategory()
+	public function hasMinimPackCategory( $randoField = '' )
 	{
 		$queryCat = $this->query( 'SELECT 1 FROM redcap_external_module_settings ems JOIN ' .
 		                          'redcap_external_modules em ON ems.external_module_id = ' .
 		                          'em.external_module_id WHERE em.directory_prefix = ? AND ' .
 		                          'ems.`key` LIKE ? AND ' .
 		                          'JSON_CONTAINS(`value`,\'"M"\',\'$.trigger\') ' .
-		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')',
+		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')' .
+		                          'AND JSON_CONTAINS(`value`,?,\'$.valuefield\')',
 		                          [ $this->getModuleDirectoryBaseName(),
-		                            'p' . $this->getProjectId() . '-packcat-%' ] );
+		                            'p' . $this->getProjectId() . '-packcat-%',
+		                            json_encode( $randoField ) ] );
 		return ( $queryCat->fetch_assoc() ) ? true : false;
 	}
 

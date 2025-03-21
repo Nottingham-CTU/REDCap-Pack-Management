@@ -193,18 +193,20 @@ else
 			$hasError = true;
 		}
 		$module->dbGetLock();
-		// Check that there is not another minimization pack category already enabled for this
-		// project. Multiple non-enabled minimization pack categories can co-exist but only one
-		// can be enabled at any time.
+		// Check that there is not another minimization pack category with the same rando field
+		// already enabled for this project. Multiple non-enabled minimization pack categories can
+		// co-exist but only onecan be enabled at any time for a given rando field.
 		if ( $infoCategory['enabled'] && $infoCategory['trigger'] == 'M' &&
 		     $module->query( 'SELECT 1 FROM redcap_external_module_settings ems JOIN ' .
 		                     'redcap_external_modules em ON ems.external_module_id = ' .
 		                     'em.external_module_id WHERE em.directory_prefix = ? AND ems.`key` ' .
 		                     'LIKE ? AND json_contains( ems.`value`, \'true\', \'$.enabled\' ) ' .
 		                     'AND json_contains( ems.`value`, \'"M"\', \'$.trigger\' ) ' .
+		                     'AND json_contains( ems.`value`, ?, \'$.valuefield\' ) ' .
 		                     'AND NOT json_contains( ems.`value`, ?, \'$.id\' )',
 		                     [ $module->getModuleDirectoryBaseName(),
 		                       'p' . $module->getProjectId() . '-packcat-%',
+		                       '"' . $infoCategory['valuefield'] . '"',
 		                       '"' . $infoCategory['id'] . '"' ] )->fetch_assoc() )
 		{
 			$hasError = true;
@@ -411,7 +413,7 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
                                                  '', 'integer' ), "\n"; ?>
     </td>
    </tr>
-   <tr data-trigger-auto="1" data-trigger-form="1" data-trigger-select="1">
+   <tr data-valuefield="1">
     <td><?php echo $module->tt('pack_value_proj_field'); ?></td>
     <td>
      <?php echo $module->getProjectFieldsSelect( 'valuefield', $infoCategory['valuefield'],
@@ -551,6 +553,8 @@ if ( $canDelete )
    var vVal = $(this).val()
    $('[data-trigger-auto], [data-trigger-form], [data-trigger-minim], [data-trigger-select]')
      .css('display','none')
+   $('[data-valuefield] td:first-child')
+     .text(<?php echo $module->escapeJSString($module->tt('pack_value_proj_field')); ?>)
    switch ( vVal )
    {
      case 'A':
@@ -561,6 +565,8 @@ if ( $canDelete )
        break
      case 'M':
        $('[data-trigger-minim]').css('display','')
+       $('[data-valuefield] td:first-child')
+         .text(<?php echo $module->escapeJSString($module->tt('pack_value_proj_field_rando')); ?>)
        break
      case 'S':
        $('[data-trigger-select]').css('display','')

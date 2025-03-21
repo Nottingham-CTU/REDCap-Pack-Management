@@ -14,14 +14,14 @@ if ( defined('SUPER_USER') && SUPER_USER == 1 && isset( $_GET['runtest'] ) )
 {
 	if ( $_GET['runtest'] == 'assignMinimPack' )
 	{
-		echo json_encode( $module->assignMinimPack( $_GET['record_id'],
-		                                            json_decode( $_GET['list_minim_codes'], true ),
-		                                            $_GET['minim_field'] ) );
+		$module->echoText( json_encode( $module->assignMinimPack( $_GET['record_id'],
+		                                             json_decode( $_GET['list_minim_codes'], true ),
+		                                             $_GET['minim_field'] ) ) );
 		exit;
 	}
 	if ( $_GET['runtest'] == 'autoAssignmentCron' )
 	{
-		echo json_encode( $module->autoAssignmentCron( [] ) );
+		$module->echoText( json_encode( $module->autoAssignmentCron( [] ) ) );
 		exit;
 	}
 }
