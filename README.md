@@ -8,10 +8,6 @@ to records using the [Minimization](https://github.com/Nottingham-CTU/REDCap-Min
 or vouchers (which could be assigned to records upon completion of a form). A detailed comparison of
 this module and the built-in REDCap Randomization feature is below.
 
-*Note that some features of this module may not be available in the first release, such as manual
-pack (re)assignment and the edit/delete packs functionality. Roles can be set up with those
-privileges ready for the release of those features.*
-
 ## Setting up Pack Categories
 Pack categories can be set up by users with project design and setup rights (or the module specific
 permission if enabled). Each pack category is independent of the others and as many categories can
@@ -30,6 +26,7 @@ Pack categories have the following options:
   * Form submission - *trigger on submission of a specific form, with optional logic*
   * Minimization - *will be triggered by the
     [Minimization](https://github.com/Nottingham-CTU/REDCap-Minimization) module*
+  * Selection - *allow the user to manuallly select the pack (more details below)*
 * If no pack for minimized allocation *(minimization trigger only)*<br>
   Specify what to do if the only available packs do not match the minimized allocation
   * Skip allocation - *try all the allocations in order of minimization until a pack is found*
@@ -150,12 +147,27 @@ want to limit the trigger to specific events/instances, you can use smart variab
 achieve this.<br>
 For example: `[event-name] = 'baseline_arm_1' and [current-instance] = 2`
 
-**Form submission trigger:** This will trigger for the event/instance of the submitted form. Use the
-trigger logic to limit to specific events/instances.<br>
-The Pack ID field does not have to exist on the triggering form, but it must exist on the same
-event/instance.
+**Form submission and selection triggers:** This will trigger for the event/instance of the
+submitted form. Use the trigger logic to limit to specific events/instances.<br>
+For the form submission trigger, the Pack ID field does not have to exist on the triggering form,
+but it must exist on the same event/instance.
 
 **Minimization trigger:** This will apply to the event used for minimization.
+
+## Using the selection trigger
+When a form or survey page is loaded with a pack ID field triggered on selection, if the existing
+value of the field is empty, the field will be rendered as a drop down list with all the available
+packs as options. When the form or survey is submitted with a pack selected, this will then trigger
+the pack assignment process.
+
+If the form is loaded with a pack ID field which contains a value, this will be rendered as normal.
+You will probably want to use conditional `@READONLY` or `@HIDDEN` action tags to prevent the pack
+field from being edited after pack assignment.
+
+The selection trigger supports the REDCap mobile app. If a value is entered into the pack ID field
+in the mobile app which matches a valid unassigned pack then that pack will be assigned when the
+data is sent to the server. If packs are labelled with barcodes the `@BARCODE-APP` action tag can
+be used to make pack selection in the app easier.
 
 ## Comparison with REDCap Randomization
 REDCap contains a built-in randomization feature which was improved in version 14.7.0 and this
@@ -177,5 +189,6 @@ comparison table below to help you decide which best meets your needs.
 |Separate lists for development and production|Yes|No|
 |Limit assignment trigger by role|Randomize privilege|Smart variables in trigger logic|
 |Click button to assign|Randomize button option|Not available<br>(unless triggered by Minimization)|
+|Specific pack can be selected|No, automatic assignment only|Yes, using selection trigger|
 |Obtain count of remaining packs|Not possible|Can populate field|
 

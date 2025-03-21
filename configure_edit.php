@@ -22,13 +22,13 @@ if ( $new )
 		exit;
 	}
 	$infoCategory = [ 'id' => $_POST['cat_id'] ?? '', 'enabled' => true, 'trigger' => '',
-	                  'form' => '', 'logic' => '', 'nominim' => '', 'dags' => false,
-	                  'dags_rcpt' => false, 'blocks' => false, 'expire' => true, 'expire_buf' => 0,
-	                  'packfield' => '', 'datefield' => '', 'countfield' => '', 'valuefield' => '',
-	                  'extrafields' => [], 'psendfield' => '', 'prcptfield' => '',
-	                  'preturnfield' => '', 'ptrnssave_ri' => false, 'roles_view' => [],
-	                  'roles_dags' => [], 'roles_invalid' => [], 'roles_assign' => [],
-	                  'roles_add' => [], 'roles_edit' => [] ];
+	                  'form' => '', 'logic' => '', 'nominim' => '', 'sel_label' => '',
+	                  'dags' => false, 'dags_rcpt' => false, 'blocks' => false, 'expire' => true,
+	                  'expire_buf' => 0, 'packfield' => '', 'datefield' => '', 'countfield' => '',
+	                  'valuefield' => '', 'extrafields' => [], 'psendfield' => '',
+	                  'prcptfield' => '', 'preturnfield' => '', 'ptrnssave_ri' => false,
+	                  'roles_view' => [], 'roles_dags' => [], 'roles_invalid' => [],
+	                  'roles_assign' => [], 'roles_add' => [], 'roles_edit' => [] ];
 }
 else
 {
@@ -112,8 +112,9 @@ else
 	{
 		// Build the category object from the form submission, begin with the standard options.
 		$infoCategory = [ 'id' => $_GET['cat_id'] ];
-		foreach ( [ 'enabled', 'trigger', 'form', 'logic', 'nominim', 'dags', 'dags_rcpt', 'blocks',
-		            'expire', 'expire_buf', 'packfield', 'datefield', 'countfield', 'valuefield' ]
+		foreach ( [ 'enabled', 'trigger', 'form', 'logic', 'nominim', 'sel_label', 'dags',
+		            'dags_rcpt', 'blocks', 'expire', 'expire_buf', 'packfield', 'datefield',
+		            'countfield', 'valuefield' ]
 		          as $fieldName )
 		{
 			if ( in_array( $fieldName, [ 'enabled', 'dags', 'dags_rcpt', 'blocks', 'expire' ] ) )
@@ -154,6 +155,19 @@ else
 		{
 			$infoCategory['extrafields'] = new \stdClass;
 		}
+		// Add the pack send/received/returned fields.
+		foreach ( [ 'psendfield', 'prcptfield', 'preturnfield', 'ptrnssave_ri' ] as $fieldName )
+		{
+			if ( $fieldName == 'ptrnssave_ri' )
+			{
+				$infoCategory[ $fieldName ] = ( ( $_POST[ $fieldName ] ?? '' ) == '1' );
+			}
+			else
+			{
+				$infoCategory[ $fieldName ] = trim( str_replace( "\r\n", "\n",
+				                                                 $_POST[ $fieldName ] ?? '' ) );
+			}
+		}
 		// Parse the role lists.
 		foreach ( [ 'roles_view', 'roles_dags', 'roles_invalid', 'roles_assign',
 		            'roles_add', 'roles_edit' ] as $fieldName )
@@ -169,7 +183,7 @@ else
 		     ( $infoCategory['trigger'] == 'M' &&
 		       ! in_array( $infoCategory['nominim'], ['S', 'P'] ) ) ||
 		     $infoCategory['packfield'] == '' ||
-		     ! in_array( $infoCategory['trigger'], ['A', 'F', 'M'] ) )
+		     ! in_array( $infoCategory['trigger'], ['A', 'F', 'M', 'S'] ) )
 		{
 			$hasError = true;
 		}
@@ -235,8 +249,9 @@ $module->writeStyle();
  <i class="fas fa-boxes-stacked"></i> <?php echo $module->tt('module_name'), "\n"; ?>
 </div>
 <form method="post" id="catform" action="<?php
-echo $_GET['cat_id'] == '' ? $module->getUrl('configure_edit.php?cat_id=' . $_POST['cat_id']) : '';
-?>">
+echo $_GET['cat_id'] == '' ? str_replace( 'ExternalModules/?', 'ExternalModules/index.php?',
+                                  $module->getUrl('configure_edit.php?cat_id=' . $_POST['cat_id']) )
+                           : ''; ?>">
  <table class="mod-packmgmt-formtable">
   <tbody>
    <tr><th colspan="2"><?php echo $module->tt('pack_category'); ?></th></tr>
@@ -263,7 +278,8 @@ echo $_GET['cat_id'] == '' ? $module->getUrl('configure_edit.php?cat_id=' . $_PO
      <select name="trigger" required>
       <option value=""><?php echo $module->tt('select'); ?></option>
 <?php
-foreach ( [ 'A' => 'trigger_auto', 'F' => 'trigger_form', 'M' => 'trigger_minim' ] as $k => $v )
+foreach ( [ 'A' => 'trigger_auto', 'F' => 'trigger_form', 'M' => 'trigger_minim',
+            'S' => 'trigger_select' ] as $k => $v )
 {
 ?>
       <option value="<?php echo $k; ?>"<?php echo $infoCategory['trigger'] == $k
@@ -291,7 +307,7 @@ foreach ( \REDCap::getInstrumentNames() as $k => $v )
      </select>
     </td>
    </tr>
-   <tr data-trigger-auto="1" data-trigger-form="1" data-logic="1">
+   <tr data-trigger-auto="1" data-trigger-form="1" data-trigger-select="1" data-logic="1">
     <td><?php echo $module->tt('trig_logic'); ?><span>*</span></td>
     <td>
      <textarea name="logic" required><?php echo $module->escape( $infoCategory['logic'] ); ?></textarea>
@@ -312,6 +328,14 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
 }
 ?>
      </select>
+    </td>
+   </tr>
+   <tr data-trigger-select="1">
+    <td><?php echo $module->tt('selection_label'); ?></td>
+    <td>
+     <input type="text" name="sel_label"
+            title="<?php echo str_replace( '\n', '&#10;', $module->tt('selection_label_tt') ); ?>"
+            value="<?php echo $module->escape( $infoCategory['sel_label'] ?? '' ); ?>">
     </td>
    </tr>
    <tr>
@@ -373,7 +397,7 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
                                                  'required' ), "\n"; ?>
     </td>
    </tr>
-   <tr data-trigger-auto="1" data-trigger-form="1">
+   <tr data-trigger-auto="1" data-trigger-form="1" data-trigger-select="1">
     <td><?php echo $module->tt('pack_date_proj_field'); ?></td>
     <td>
      <?php echo $module->getProjectFieldsSelect( 'datefield', $infoCategory['datefield'],
@@ -387,7 +411,7 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
                                                  '', 'integer' ), "\n"; ?>
     </td>
    </tr>
-   <tr data-trigger-auto="1" data-trigger-form="1">
+   <tr data-trigger-auto="1" data-trigger-form="1" data-trigger-select="1">
     <td><?php echo $module->tt('pack_value_proj_field'); ?></td>
     <td>
      <?php echo $module->getProjectFieldsSelect( 'valuefield', $infoCategory['valuefield'],
@@ -522,46 +546,55 @@ if ( $canDelete )
 }
 ?>
 <script type="text/javascript">
- $('[name="trigger"]').change( function()
+ $('[name="trigger"]').on( 'change', function()
  {
    var vVal = $(this).val()
-   $('[data-trigger-auto]').css('display', vVal == 'A' ? '' : 'none')
-   $('[data-trigger-auto] [' + ( vVal == 'A' ? 'data-' : '' ) + 'required]')
-     .attr('data-required', ( vVal == 'A' ? null : '1' )).prop('required', vVal == 'A')
-   var vElems = '[data-trigger-form]'
-   if ( vVal == 'A' )
+   $('[data-trigger-auto], [data-trigger-form], [data-trigger-minim], [data-trigger-select]')
+     .css('display','none')
+   switch ( vVal )
    {
-     vElems += ':not([data-trigger-auto])'
+     case 'A':
+       $('[data-trigger-auto]').css('display','')
+       break
+     case 'F':
+       $('[data-trigger-form]').css('display','')
+       break
+     case 'M':
+       $('[data-trigger-minim]').css('display','')
+       break
+     case 'S':
+       $('[data-trigger-select]').css('display','')
+       break
    }
-   $(vElems).css('display', vVal == 'F' ? '' : 'none')
-   $(vElems + ' [' + ( vVal == 'F' ? 'data-' : '' ) + 'required]')
-     .attr('data-required', ( vVal == 'F' ? null : '1' )).prop('required', vVal == 'F')
-   $('[data-trigger-minim]').css('display', vVal == 'M' ? '' : 'none')
-   $('[data-trigger-minim] [' + ( vVal == 'M' ? 'data-' : '' ) + 'required]')
-     .attr('data-required', ( vVal == 'M' ? null : '1' )).prop('required', vVal == 'M')
+   $('[data-trigger-auto]:visible [data-required], [data-trigger-form]:visible [data-required], ' +
+     '[data-trigger-minim]:visible [data-required], [data-trigger-select]:visible [data-required]')
+     .attr('data-required',null).prop('required',true)
+   $('[data-trigger-auto]:not(:visible) [required], [data-trigger-form]:not(:visible) [required],' +
+     '[data-trigger-minim]:not(:visible) [required],[data-trigger-select]:not(:visible) [required]')
+     .attr('data-required','1').prop('required',false)
    $('[data-logic] td:first-child span').text( vVal == 'A' ? '*' : '' )
    if ( vVal != 'A' )
    {
      $('[data-logic] textarea').attr('data-required', '1').prop('required', false)
    }
  } )
- $('[name="trigger"]').change()
- $('[name="dags"]').change( function()
+ $('[name="trigger"]').trigger('change')
+ $('[name="dags"]').on( 'change', function()
  {
    var vVal = $(this).val()
    $('[data-assign-dags]').css('display', vVal == '1' ? '' : 'none')
    $('[data-assign-dags] [' + ( vVal == '1' ? 'data-' : '' ) + 'required]')
      .attr('data-required', ( vVal == '1' ? null : '1' )).prop('required', vVal == '1')
  } )
- $('[name="dags"]').change()
- $('[name="expire"]').change( function()
+ $('[name="dags"]').trigger('change')
+ $('[name="expire"]').on( 'change', function()
  {
    var vVal = $(this).val()
    $('[data-pack-expire]').css('display', vVal == '1' ? '' : 'none')
    $('[data-pack-expire] [' + ( vVal == '1' ? 'data-' : '' ) + 'required]')
      .attr('data-required', ( vVal == '1' ? null : '1' )).prop('required', vVal == '1')
  } )
- $('[name="expire"]').change()
+ $('[name="expire"]').trigger('change')
  var vFuncAP = function()
  {
    var vFieldNum = $(this).closest('tr').attr('data-additional-field')
@@ -582,8 +615,8 @@ if ( $canDelete )
        .find('td span:nth-of-type(2)').text('*')
    }
  }
- $('[name="f1_name"],[name="f1_label"],[name="f1_type"],[name="f1_field"]').change(vFuncAP)
- $('#addextrafield').click( function()
+ $('[name="f1_name"],[name="f1_label"],[name="f1_type"],[name="f1_field"]').on( 'change', vFuncAP )
+ $('#addextrafield').on( 'click', function()
  {
    var vLastFieldNum = $('[data-additional-field]').last().attr('data-additional-field')
    var vThisFieldNum = vLastFieldNum - 0 + 1
@@ -596,7 +629,7 @@ if ( $canDelete )
      $(this).attr('name',$(this).attr('name').replace( 'f' + vLastFieldNum + '_',
                                                        'f' + vThisFieldNum + '_') )
      $(this).val('')
-     $(this).change(vFuncAP)
+     $(this).on( 'change', vFuncAP )
    } )
    vNewRows.appendTo('[data-section="additional-fields"]')
  } )
@@ -608,17 +641,17 @@ echo $module->escape( json_encode( $infoCategory['extrafields'] ) ); ?>').text()
  {
    if ( i > 0 )
    {
-     $('#addextrafield').click()
+     $('#addextrafield').trigger('click')
    }
    var vExtraField = vExtraFields[ vExtraFieldNames[i] ]
    $('[name="f' + (i + 1) + '_name"]').val( vExtraFieldNames[i] )
    $('[name="f' + (i + 1) + '_label"]').val( vExtraField.label )
    $('[name="f' + (i + 1) + '_type"]').val( vExtraField.type )
    $('[name="f' + (i + 1) + '_field"]').val( vExtraField.field )
-   $('[name="f' + (i + 1) + '_name"]').change()
+   $('[name="f' + (i + 1) + '_name"]').trigger('change')
  }
  var vIsDelete = false
- $('button[name="cat_reset"]').on('click', function( event )
+ $('button[name="cat_reset"]').on( 'click', function( event )
  {
    if ( vIsDelete )
    {
@@ -630,8 +663,8 @@ echo $module->escape( json_encode( $infoCategory['extrafields'] ) ); ?>').text()
                  "<?php echo $module->tt('opt_cancel'); ?>",
                  function() { vIsDelete = true; $('button[name="cat_reset"]').trigger('click') },
                  "<?php echo $module->tt('pack_cat_reset'); ?>" )
- })
- $('button[name="cat_delete"]').on('click', function( event )
+ } )
+ $('button[name="cat_delete"]').on( 'click', function( event )
  {
    if ( vIsDelete )
    {
@@ -643,7 +676,7 @@ echo $module->escape( json_encode( $infoCategory['extrafields'] ) ); ?>').text()
                  "<?php echo $module->tt('opt_cancel'); ?>",
                  function() { vIsDelete = true; $('button[name="cat_delete"]').trigger('click') },
                  "<?php echo $module->tt('pack_cat_delete'); ?>" )
- })
+ } )
 </script>
 <?php
 

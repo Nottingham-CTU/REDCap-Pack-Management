@@ -76,5 +76,17 @@
 		"name" : "Edit and delete packs",
 		"expected" : "Packs can be edited and deleted by users with the edit and delete roles",
 		"scenario" : "Create pack category, define roles and confirm packs can be edited and deleted only by admins and users with roles for editing and deleting."
+	},
+	{
+		"file" : "test_t14Assignpackselection.py",
+		"name" : "Assign pack using selection trigger",
+		"expected" : "Packs are visible in a drop down once added and can be selected to trigger assignment",
+		"scenario" : "Create pack category and confirm packs assigned only when applicable"
+	},
+	{
+		"file" : "test_t15AssignpackselectionDAG.py",
+		"name" : "Assign pack using selection trigger (w/DAG)",
+		"expected" : "Packs are visible in a drop down only when issued to the respective DAG and can be selected to trigger assignment",
+		"scenario" : "Create pack category and confirm packs assigned only when applicable"
 	}
 ]

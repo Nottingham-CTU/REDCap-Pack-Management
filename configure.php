@@ -52,7 +52,9 @@ $module->writeStyle();
 <div class="projhdr">
  <i class="fas fa-boxes-stacked"></i> <?php echo $module->tt('module_name'), "\n"; ?>
 </div>
-<form method="post" action="<?php echo $module->getUrl( 'configure_edit.php' ); ?>">
+<form method="post" action="<?php echo str_replace( 'ExternalModules/?',
+                                                    'ExternalModules/index.php?',
+                                                    $module->getUrl( 'configure_edit.php' ) ); ?>">
  <table class="mod-packmgmt-formtable">
   <tr><th colspan="2"><?php echo $module->tt('add_category'); ?></th></tr>
   <tr>
@@ -94,6 +96,11 @@ foreach ( $listCategories as $infoCategory )
 	if ( $infoCategory['trigger'] == 'F' )
 	{
 		echo $module->tt('trigger_form'), ' (', $module->escape( $infoCategory['form'] ), ')';
+	}
+	elseif ( $infoCategory['trigger'] == 'S' )
+	{
+		echo $module->tt('trigger_select'),
+		     ' (', $module->escape( $infoCategory['packfield'] ), ')';
 	}
 	else
 	{

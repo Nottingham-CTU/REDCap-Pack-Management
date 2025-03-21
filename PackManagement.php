@@ -33,9 +33,82 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 	}
 
 
-	// Provide pack management settings to the REDCap UI Tweaker simplified view.
+
+	// Handle mobile app submissions for the selection trigger.
+	public function redcap_module_api_before( $projectID, $post )
+	{
+		if ( $post['mobile_app'] == '1' && $post['uuid'] != '' && $post['content'] == 'record' &&
+		     $post['action'] == 'import' && $post['format'] == 'json' )
+		{
+			$listData = json_decode( $post['data'], true );
+			if ( is_array( $listData ) )
+			{
+				// Get a list of the project's event IDs/unique names. If the project only has one
+				// event (i.e. is not longitudinal) then always use that event ID.
+				// Note the global Project object is used to get these values as the REDCap class
+				// functions do not work in this context.
+				$singleEvent = null;
+				$listEvents = $GLOBALS['Proj']->getUniqueEventNames( null );
+				if ( count( $listEvents ) == 1 )
+				{
+					$singleEvent = array_keys( $listEvents )[0];
+				}
+				$recordIDField = $GLOBALS['Proj']->table_pk;
+				// Get the category IDs / pack fields for the active selection trigger categories.
+				$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) ' .
+				                          'AS id, JSON_UNQUOTE(JSON_EXTRACT(`value`,' .
+				                          '\'$.packfield\')) AS packfield ' .
+				                          'FROM redcap_external_module_settings ems ' .
+				                          'JOIN redcap_external_modules em ' .
+				                          'ON ems.external_module_id = em.external_module_id ' .
+				                          'WHERE em.directory_prefix = ? AND ems.`key` LIKE ? ' .
+				                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\') ' .
+				                          'AND ( JSON_CONTAINS(`value`,\'"S"\',\'$.trigger\') )',
+				                          [ $this->getModuleDirectoryBaseName(),
+				                            'p' . $projectID . '-packcat-%' ] );
+				while( $infoCat = $queryCat->fetch_assoc() )
+				{
+					$catID = $infoCat['id'];
+					$packField = $infoCat['packfield'];
+					// For each submitted record...
+					foreach ( $listData as $infoData )
+					{
+						// If the record contains the pack field...
+						if ( isset( $infoData[ $packField ] ) )
+						{
+							// Identify the pack ID, record, event and instance.
+							$packID = $infoData[ $packField ];
+							$recordID = $infoData[ $recordIDField ];
+							$eventID = $singleEvent ??
+							           array_search( $infoData['redcap_event_name'], $listEvents );
+							$repeatInstance = $infoData['redcap_repeat_instance'] ?? '';
+							$repeatInstance = ( $repeatInstance == '' ? 1 : $repeatInstance );
+							// Don't allow submission if the pack field already has a value.
+							if ( $this->getValues( $projectID, $recordID, $eventID, $repeatInstance,
+							                       $packField )[ $packField ] != '' )
+							{
+								return $this->tt( 'error_selection_pack_submit', $packID, $catID );
+							}
+							// Assign the pack. Don't allow submission if pack cannot be assigned.
+							$infoPack = $this->choosePack( $catID, $recordID, null, null, $packID );
+							if ( $infoPack === false )
+							{
+								return $this->tt( 'error_selection_pack_submit', $packID, $catID );
+							}
+							$this->updateValues( $projectID, $recordID, $eventID,
+							                     $repeatInstance, $infoPack );
+						}
+					}
+				}
+			}
+		}
+	}
+
+
+
 	public function redcap_every_page_before_render()
 	{
+		// Provide pack management settings to the REDCap UI Tweaker simplified view.
 		if ( $this->isModuleEnabled('redcap_ui_tweaker') )
 		{
 			$UITweaker = \ExternalModules\ExternalModules::getModuleInstance('redcap_ui_tweaker');
@@ -71,6 +144,144 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 				                           } );
 			}
 		}
+
+		// If a data entry page, check for active selection triggers for the current form.
+		$this->listSelectionPackFields = [];
+		if ( ( substr( PAGE_FULL, strlen( APP_PATH_WEBROOT ), 10 ) == 'DataEntry/' &&
+		       isset( $_GET['id'] ) && isset( $_GET['page'] ) && $_GET['page'] != '' ) ||
+		     ( substr( PAGE_FULL, 0, strlen( APP_PATH_SURVEY ) ) == APP_PATH_SURVEY &&
+		       isset( $_GET['s'] ) ) )
+		{
+			if ( substr( PAGE_FULL, 0, strlen( APP_PATH_SURVEY ) ) == APP_PATH_SURVEY )
+			{
+				$queryRecord = $this->query( 'SELECT record, event_id event, instance, form_name ' .
+				                             'FROM redcap_surveys_response sr ' .
+				                             'JOIN redcap_surveys_participants sp ' .
+				                             'ON sr.participant_id = sp.participant_id ' .
+				                             'JOIN redcap_surveys s ON sp.survey_id = s.survey_id' .
+				                             ' WHERE sp.hash = ?', [ $_GET['s'] ] );
+				$infoRecord = $queryRecord->fetch_assoc();
+			}
+			else
+			{
+				$infoRecord = [ 'record' => $_GET['id'],
+				                'event' => intval( $_GET['event_id'] ?? '' ),
+				                'instance' => intval( $_GET['instance'] ?? 1 ),
+				                'form_name' => $_GET['page'] ];
+				if ( $infoRecord['event'] == '' )
+				{
+					$queryRecord = $this->query( 'SELECT event_id FROM ' . \REDCap::getDataTable() .
+					                             ' WHERE project_id = ? LIMIT 1',
+					                             [ $this->getProjectId() ] );
+					$infoRecord['event'] = $queryRecord->fetch_assoc()['event_id'];
+				}
+			}
+			$listFields = array_keys( \REDCap::getDataDictionary( $this->getProjectId(), 'array',
+			                                                      false, null,
+			                                                      $infoRecord['form_name'] ) );
+			$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS id, ' .
+			                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.logic\')) AS logic, ' .
+			                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) ' .
+			                          'AS packfield, JSON_UNQUOTE(JSON_EXTRACT(`value`,' .
+			                          '\'$.valuefield\')) AS valuefield ' .
+			                          'FROM redcap_external_module_settings ems ' .
+			                          'JOIN redcap_external_modules em ' .
+			                          'ON ems.external_module_id = em.external_module_id ' .
+			                          'WHERE em.directory_prefix = ? AND ems.`key` LIKE ? ' .
+			                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\') ' .
+			                          'AND JSON_CONTAINS(`value`,\'"S"\',\'$.trigger\')',
+			                          [ $this->getModuleDirectoryBaseName(),
+			                            'p' . $this->getProjectId() . '-packcat-%' ] );
+			while ( $infoCat = $queryCat->fetch_assoc() )
+			{
+				if ( ! in_array( $infoCat['packfield'], $listFields ) )
+				{
+					continue;
+				}
+				$infoData = $this->getValues( $this->getProjectId(), $infoRecord['record'],
+				                              $infoRecord['event'], $infoRecord['instance'],
+				                              $infoCat['valuefield'] == '' ? $infoCat['packfield']
+				                              : [ $infoCat['packfield'], $infoCat['valuefield'] ] );
+				if ( $infoData[ $infoCat['packfield'] ] != '' )
+				{
+					continue;
+				}
+				$queryRptForm = $this->query( 'SELECT m.form_name FROM redcap_metadata m ' .
+				                              'JOIN redcap_events_repeat er ON m.form_name = ' .
+				                              'er.form_name WHERE m.project_id = ? ' .
+				                              'AND er.event_id = ? AND m.field_name = ?',
+				                              [ $this->getProjectId(), $infoRecord['event'],
+				                                $infoCat['packfield'] ] );
+				if ( $infoRptForm = $queryRptForm->fetch_assoc() )
+				{
+					$rptForm = $infoRptForm['form_name'];
+				}
+				else
+				{
+					$rptForm = null;
+				}
+				$packValue = ( $infoCat['valuefield'] == '' ||
+				               $infoData[ $infoCat['valuefield'] ] ?? '' == '' )
+				             ? null : $infoData[ $infoCat['valuefield'] ];
+				$listPacks = [];
+				if ( ( $infoCat['valuefield'] == '' || $packValue !== null ) &&
+				     ( $infoCat['logic'] == '' ||
+				       \REDCap::evaluateLogic( $infoCat['logic'], $this->getProjectId(),
+				                               $infoRecord['record'], $infoRecord['event'],
+				                               $infoRecord['instance'], $rptForm,
+				                               $infoRecord['form_name'] ) ) )
+				{
+					$listPacks = $this->getAssignablePacks( $infoCat['id'],
+					                                        $infoRecord['record'], $packValue );
+					$listPacks = $this->getSelectionList( $infoCat['id'], $listPacks );
+				}
+				$packsEnum = '';
+				foreach ( $listPacks as $packID => $packLabel )
+				{
+					if ( $packsEnum != '' )
+					{
+						$packsEnum .= ' \n ';
+					}
+					$packsEnum .= $packID . ', ' . str_replace( '\n', '\ n', $packLabel );
+				}
+				$GLOBALS['Proj']->metadata[ $infoCat['packfield'] ]['element_type'] = 'select';
+				$GLOBALS['Proj']->metadata[ $infoCat['packfield'] ]['element_enum'] = $packsEnum;
+				$GLOBALS['Proj']->metadata[ $infoCat['packfield'] ]['misc'] .= ' @NOMISSING';
+				$this->listSelectionPackFields[] = $infoCat['packfield'];
+			}
+		}
+	}
+
+
+
+	// Identify the pack ID fields on forms/surveys where the selection trigger is used.
+	public function redcap_data_entry_form( $projectID, $recordID, $instrument, $eventID, $groupID,
+	                                        $repeatInstance )
+	{
+		if ( ! empty( $this->listSelectionPackFields ) )
+		{
+			$fieldsString = $this->escapeJSString( json_encode( $this->listSelectionPackFields ) );
+?>
+<script type="text/javascript">
+  $(function()
+  {
+    var vFields = JSON.parse(<?php echo $fieldsString; ?>)
+    vFields.forEach( function ( vField )
+    {
+      $('[name="' + vField + '"]').after('<input type="hidden" name="' + vField +
+                                         ':packmanagement-selection" value="1">')
+    } )
+  })
+</script>
+<?php
+		}
+	}
+
+	public function redcap_survey_page( $projectID, $recordID, $instrument, $eventID, $groupID,
+	                                    $surveyHash, $responseID, $repeatInstance )
+	{
+		$this->redcap_data_entry_form( $projectID, $recordID, $instrument, $eventID, $groupID,
+		                               $repeatInstance );
 	}
 
 
@@ -87,7 +298,8 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		}
 
 		$this->dbGetLock();
-		// Get the pack categories which are relevant to this submission.
+		// Get the pack categories which are relevant to this submission, excluding selection
+		// triggers which are handled later.
 		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS id, ' .
 		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.logic\')) AS logic, ' .
 		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) ' .
@@ -133,6 +345,37 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			{
 				$this->updateValues( $projectID, $recordID, $eventID, $repeatInstance, $infoData );
 			}
+		}
+
+		// Get the pack categories with selection trigger.
+		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS id, ' .
+		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) ' .
+		                          'AS packfield ' .
+		                          'FROM redcap_external_module_settings ems ' .
+		                          'JOIN redcap_external_modules em ' .
+		                          'ON ems.external_module_id = em.external_module_id ' .
+		                          'WHERE em.directory_prefix = ? AND ems.`key` LIKE ? ' .
+		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\') ' .
+		                          'AND ( JSON_CONTAINS(`value`,\'"S"\',\'$.trigger\') )',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $this->getProjectId() . '-packcat-%' ] );
+		$listCat = [];
+		while( $infoCat = $queryCat->fetch_assoc() )
+		{
+			// Only consider categories with a submitted selection field.
+			if ( isset( $_POST[ $infoCat['packfield'] . ':packmanagement-selection' ] ) )
+			{
+				// Get the pack field to be assigned for this category.
+				$listCat[ $infoCat['id'] ] = $infoCat['packfield'];
+			}
+		}
+		foreach ( $listCat as $catID => $packField )
+		{
+			// Get and assign pack for the pack category.
+			$infoData = $this->choosePack( $catID, $recordID, null, null, $_POST[ $packField ] );
+			// Save the data to the record.
+			$this->updateValues( $projectID, $recordID, $eventID, $repeatInstance,
+			                     ( $infoData !== false ? $infoData : [ $packField => '' ] ) );
 		}
 		$this->dbReleaseLock();
 	}
@@ -247,7 +490,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 	// Assign a minimization pack as requested by the Minimization module.
-	public function assignMinimPack( $recordID, $listMinimCodes, $minimField = '' )
+	public function assignMinimPack( $recordID, $listMinimCodes, $minimField = '', $packID = null )
 	{
 		$this->dbGetLock();
 		// Get pack category for minimization field.
@@ -273,14 +516,29 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		// Assign pack
 		$infoPack = false;
 		$chosenCode = null;
-		foreach ( $listMinimCodes as $minimCode )
+		if ( $packID === null )
 		{
-			$infoPack = $this->choosePack( $infoCat['id'], $recordID, $minimCode,
-			                              ( $infoCat['nominim'] == 'S' ? null : $listMinimCodes ) );
-			$chosenCode = $minimCode;
-			if ( $infoPack !== false || $infoCat['nominim'] != 'S' )
+			// Standard minimization, choose a pack for the minimized allocation.
+			foreach ( $listMinimCodes as $minimCode )
 			{
-				break;
+				$infoPack = $this->choosePack( $infoCat['id'], $recordID, $minimCode,
+				                               ( $infoCat['nominim'] == 'S'
+				                                 ? null : $listMinimCodes ) );
+				$chosenCode = $minimCode;
+				if ( $infoPack !== false || $infoCat['nominim'] != 'S' )
+				{
+					break;
+				}
+			}
+		}
+		else
+		{
+			// Manual randomization, choose the specified pack ID.
+			$infoPack = $this->choosePack( $infoCat['id'], $recordID, null, null, $packID );
+			if ( $infoPack !== false )
+			{
+				$chosenCode = $this->getPackProperty( $this->getProjectId(), $infoCat['id'],
+				                                      $packID, 'value' );
 			}
 		}
 		$this->dbReleaseLock();
@@ -582,6 +840,91 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Get a list of valid assignable packs from the specified pack category.
+	public function getAssignablePacks( $catID, $recordID, $value = null, $ignoreExpiry = false )
+	{
+		$this->dbGetLock();
+		// Get the pack category details.
+		$queryCat = $this->query( 'SELECT ems.`value` AS category ' .
+		                          'FROM redcap_external_module_settings ems JOIN ' .
+		                          'redcap_external_modules em ON ems.external_module_id = ' .
+		                          'em.external_module_id WHERE em.directory_prefix = ? AND ' .
+		                          'ems.`key` = ? AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $this->getProjectId() . '-packcat-' . $catID ] );
+		$infoCat = $queryCat->fetch_assoc();
+		if ( ! is_array( $infoCat ) )
+		{
+			$this->dbReleaseLock();
+			return [];
+		}
+		$infoCat = json_decode( $infoCat['category'], true );
+		$paramsPacks = [ $this->getModuleDirectoryBaseName(),
+		                 'p' . $this->getProjectId() . '-packlist-' . $catID ];
+		// If packs are assigned to DAGs, prepare to filter the list of packs by DAG.
+		$sqlPacks = '';
+		if ( $infoCat['dags'] )
+		{
+			// Get the record DAG.
+			$queryDAG = $this->query( 'SELECT `value` AS dag FROM ' .
+			                          $this->getDataTable( $this->getProjectId() ) .
+			                          ' WHERE project_id = ? AND record = ? AND field_name = ?',
+			                          [ $this->getProjectId(), $recordID, '__GROUPID__' ] );
+			$infoDAG = $queryDAG->fetch_assoc();
+			if ( empty( $infoDAG ) )
+			{
+				// Record not in a DAG, cannot assign pack.
+				$this->dbReleaseLock();
+				return [];
+			}
+			$sqlPacks .= ' AND packlist.dag = ? AND packlist.dag_rcpt = 1';
+			$paramsPacks[] = $infoDAG['dag'];
+		}
+		// If packs expire, prepare to exclude expired packs.
+		if ( ! $ignoreExpiry && $infoCat['expire'] )
+		{
+			// Use expire buffer (number of hours), or 10 minutes if buffer = 0;
+			// Add an extra 5 minutes to the expiry buffer here to allow time between selection
+			// and submission.
+			$expireBuffer = $infoCat['expire_buf'] ?? 0;
+			$expireBuffer = ( $expireBuffer == 0 ) ? 600 : ( $expireBuffer * 3600 );
+			$now = date( 'Y-m-d H:i:s', time() + $expireBuffer + 300 );
+			$sqlPacks .= ' AND packlist.expiry > ?';
+			$paramsPacks[] = $now;
+		}
+		// If the pack must match a value, prepare to filter by it.
+		if ( $value !== null )
+		{
+			$sqlPacks .= ' AND packlist.value = ?';
+			$paramsPacks[] = $value;
+		}
+		// Get the available packs, filtered as required.
+		$queryPacks = $this->query( 'SELECT id, block_id, packlist.value, expiry, extrafields ' .
+		                            'FROM redcap_external_module_settings ems, ' .
+		                            'redcap_external_modules em, ' .
+		                            $this->makePacklistSQL('ems.value') .
+		                            'WHERE em.external_module_id = ems.external_module_id ' .
+		                            'AND em.directory_prefix = ? AND ems.key = ? ' .
+		                            'AND packlist.invalid = 0 AND packlist.assigned = 0 ' .
+		                            $sqlPacks . ' ORDER BY id', $paramsPacks );
+		$listPacks = [];
+		while ( $infoPack = $queryPacks->fetch_assoc() )
+		{
+			$infoPack['extrafields'] = json_decode( $infoPack['extrafields'] );
+			foreach ( $infoPack['extrafields'] as $efName => $efValue )
+			{
+				$infoPack[ 'f_' . $efName ] = $efValue;
+			}
+			unset( $infoPack['extrafields'] );
+			$listPacks[ $infoPack['id'] ] = $infoPack;
+		}
+		$this->dbReleaseLock();
+		// Return the list of assignable packs.
+		return $listPacks;
+	}
+
+
+
 	// Get a project's redcap_data table.
 	public function getDataTable( $projectID )
 	{
@@ -667,6 +1010,42 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Get one or more properties for a pack.
+	public function getPackProperty( $projectID, $catID, $packID, $property )
+	{
+		if ( ! is_array( $property ) )
+		{
+			$property = [ $property ];
+		}
+		$sql = '';
+		$sqlParams = [];
+		for ( $i = 0; $i < count( $property ) && $i < count( $value ); $i++ )
+		{
+			$sql .= ( $sql == '' ) ? 'SELECT ' : ', ';
+			$sql .= 'JSON_UNQUOTE( JSON_EXTRACT( ems.value, REPLACE( JSON_UNQUOTE( ' .
+			        'JSON_SEARCH( ems.value, \'one\', ?, NULL, \'$[*].id\' ) ), \'.id\', ? ) ) ) ' .
+			        'AS `' . str_replace( '`', '', $property[$i] ) . '`';
+			$sqlParams[] = $packID;
+			$sqlParams[] = '.' . $property[$i];
+		}
+		$sql .= ' FROM redcap_external_module_settings ems WHERE ems.external_module_id = ' .
+		        '(SELECT em.external_module_id FROM redcap_external_modules em ' .
+		        'WHERE em.directory_prefix = ? LIMIT 1) AND ems.key = ? ' .
+		        'AND JSON_CONTAINS( JSON_EXTRACT( ems.value, \'$[*].id\' ), ? )';
+		$sqlParams[] = $this->getModuleDirectoryBaseName();
+		$sqlParams[] = 'p' . $projectID . '-packlist-' . $catID;
+		$sqlParams[] = json_encode( $packID );
+		$queryProperty = $this->query( $sql, $sqlParams );
+		$infoProperty = $queryProperty->fetch_assoc();
+		if ( is_array( $infoProperty ) && count( $property ) == 1 )
+		{
+			$infoProperty = $infoProperty[ str_replace( '`', '', $property[0] ) ];
+		}
+		return $infoProperty;
+	}
+
+
+
 	// Get the project fields which can be used for storing pack fields into the records.
 	public function getProjectFields( $type = '' )
 	{
@@ -714,6 +1093,50 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		}
 		$output .= '</select>';
 		return $output;
+	}
+
+
+
+	// Get selection list items from list of assignable packs.
+	public function getSelectionList( $catID, $listPacks )
+	{
+		// Get the pack category details.
+		$queryCat = $this->query( 'SELECT ems.`value` AS category ' .
+		                          'FROM redcap_external_module_settings ems JOIN ' .
+		                          'redcap_external_modules em ON ems.external_module_id = ' .
+		                          'em.external_module_id WHERE em.directory_prefix = ? AND ' .
+		                          'ems.`key` = ? AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $this->getProjectId() . '-packcat-' . $catID ] );
+		$infoCat = $queryCat->fetch_assoc();
+		if ( ! is_array( $infoCat ) )
+		{
+			return [];
+		}
+		$infoCat = json_decode( $infoCat['category'], true );
+		$listItems = [];
+		foreach ( $listPacks as $infoPack )
+		{
+			$expiryDMY = substr( $infoPack['expiry'], 8, 2 ) . '-' .
+			             substr( $infoPack['expiry'], 5, 2 ) . '-' .
+			             substr( $infoPack['expiry'], 0, 4 ) . substr( $infoPack['expiry'], 10 );
+			$expiryMDY = substr( $infoPack['expiry'], 5, 2 ) . '-' .
+			             substr( $infoPack['expiry'], 8, 2 ) . '-' .
+			             substr( $infoPack['expiry'], 0, 4 ) . substr( $infoPack['expiry'], 10 );
+			$packLabel = ( ( $infoCat['sel_label'] ?? '' ) == '' ) ? '[id]' : $infoCat['sel_label'];
+			$packLabel = str_replace( '[expiry]',
+			                          \DateTimeRC::format_ts_from_ymd( $infoPack['expiry'] ),
+			                          $packLabel );
+			$packLabel = str_replace( '[expiry:ymd]', $infoPack['expiry'], $packLabel );
+			$packLabel = str_replace( '[expiry:dmy]', $expiryDMY, $packLabel );
+			$packLabel = str_replace( '[expiry:mdy]', $expiryMDY, $packLabel );
+			foreach ( $infoPack as $fieldName => $fieldValue )
+			{
+				$packLabel = str_replace( '[' . $fieldName . ']', $fieldValue, $packLabel );
+			}
+			$listItems[ $infoPack['id'] ] = $packLabel;
+		}
+		return $listItems;
 	}
 
 
@@ -1094,5 +1517,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			 'el.innerText = \'', addslashes( preg_replace( "/[\t\r\n ]+/", ' ', $style ) ), '\';',
 			 'document.getElementsByTagName(\'head\')[0].appendChild(el)})()</script>';
 	}
+
+	private $listSelectionPackFields;
 
 }
