@@ -45,6 +45,9 @@ Pack categories have the following options:
   performed on entire blocks at a time.
 * Packs have expiry dates<br>
   If yes, each pack must be given an expiry date, after which it cannot be used.
+* Pack expiry buffer<br>
+  Set the minimum time in hours which must be remaining before a pack expires in order for it to be
+  used. If set to 0, a buffer of 10 minutes will be applied.
 * Field to store pack ID<br>
   This is the field on the record to which the pack ID will be saved when a pack is assigned.<br>
   *Note if the pack ID field is present on multiple events/instances, multiple packs can be assigned
@@ -56,11 +59,13 @@ Pack categories have the following options:
   The number of remaining packs following the assignment will be saved to this field. This will be
   the number of valid packs which could be assigned to similar records, taking into account DAG
   etc. This option may be useful for triggering alerts when the number of available packs is low.
-* Pack value must match field<br>
+* Pack value must match field *or* Randomization field<br>
   This option will restrict pack selection to those with a *value* which matches the value of the
   specified field.<br>
-  *(not applicable for minimization trigger - the pack value will always need to match the
-    allocation code)*
+  For the minimization trigger, this option selects the *randomization field*. The pack value will
+  always need to match the minimized allocation. The minimization module will use the minimization
+  triggered category with the corresponding randomization field, or if there is no such category,
+  the minimization category with no set randomization field.
 - Additional pack fields<br>
   These are extra fields which can be defined to store more data about each pack. They can
   optionally be configured to store the data into record fields on pack assignment.<br>
