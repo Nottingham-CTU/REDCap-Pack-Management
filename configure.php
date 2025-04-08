@@ -14,14 +14,14 @@ if ( defined('SUPER_USER') && SUPER_USER == 1 && isset( $_GET['runtest'] ) )
 {
 	if ( $_GET['runtest'] == 'assignMinimPack' )
 	{
-		echo json_encode( $module->assignMinimPack( $_GET['record_id'],
-		                                            json_decode( $_GET['list_minim_codes'], true ),
-		                                            $_GET['minim_field'] ) );
+		$module->echoText( json_encode( $module->assignMinimPack( $_GET['record_id'],
+		                                             json_decode( $_GET['list_minim_codes'], true ),
+		                                             $_GET['minim_field'] ) ) );
 		exit;
 	}
 	if ( $_GET['runtest'] == 'autoAssignmentCron' )
 	{
-		echo json_encode( $module->autoAssignmentCron( [] ) );
+		$module->echoText( json_encode( $module->autoAssignmentCron( [] ) ) );
 		exit;
 	}
 }
@@ -52,7 +52,9 @@ $module->writeStyle();
 <div class="projhdr">
  <i class="fas fa-boxes-stacked"></i> <?php echo $module->tt('module_name'), "\n"; ?>
 </div>
-<form method="post" action="<?php echo $module->getUrl( 'configure_edit.php' ); ?>">
+<form method="post" action="<?php echo str_replace( 'ExternalModules/?',
+                                                    'ExternalModules/index.php?',
+                                                    $module->getUrl( 'configure_edit.php' ) ); ?>">
  <table class="mod-packmgmt-formtable">
   <tr><th colspan="2"><?php echo $module->tt('add_category'); ?></th></tr>
   <tr>
@@ -95,6 +97,11 @@ foreach ( $listCategories as $infoCategory )
 	{
 		echo $module->tt('trigger_form'), ' (', $module->escape( $infoCategory['form'] ), ')';
 	}
+	elseif ( $infoCategory['trigger'] == 'S' )
+	{
+		echo $module->tt('trigger_select'),
+		     ' (', $module->escape( $infoCategory['packfield'] ), ')';
+	}
 	else
 	{
 		echo $module->tt( $infoCategory['trigger'] == 'M' ? 'trigger_minim' : 'trigger_auto' );
@@ -131,6 +138,23 @@ foreach ( $listCategories as $infoCategory )
 }
 ?>
 </table>
+
+<p>&nbsp;</p>
+
+<ul>
+ <li>
+  <a href="<?php echo $module->getUrl( 'export.php' ); ?>">
+   <?php echo $module->tt('pack_categories_export'), "\n"; ?>
+  </a>
+ </li>
+ <li>
+  <a href="<?php echo $module->getUrl( 'import.php' ); ?>">
+   <?php echo $module->tt('pack_categories_import'), "\n"; ?>
+  </a>
+ </li>
+</ul>
+
+<p>&nbsp;</p>
 
 <?php
 

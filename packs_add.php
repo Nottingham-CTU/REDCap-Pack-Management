@@ -66,6 +66,8 @@ if ( ! empty( $_POST ) )
 				if ( $headerRow )
 				{
 					$listHeaders = $csvLine;
+					$listHeaders[0] = str_replace( chr( 0xEF ) . chr( 0xBB ) . chr( 0xBF ),
+					                               '', $listHeaders[0] );
 					if ( ! in_array( 'id', $listHeaders ) ||
 					     ( $infoCategory['blocks'] && ! in_array( 'block_id', $listHeaders ) ) ||
 					     ( $infoCategory['expire'] && ! in_array( 'expiry', $listHeaders ) ) )
@@ -118,8 +120,22 @@ if ( ! empty( $_POST ) )
 					}
 					if ( in_array( $infoPack['id'], $listPackIDs ) )
 					{
-						$listErrors[] = [ 'error_duplicate_pack_id', $infoExistingPack['id'] ];
+						$listErrors[] = [ 'error_duplicate_pack_id', $infoPack['id'] ];
 						continue;
+					}
+					if ( $infoCategory['expire'] )
+					{
+						if ( $infoPack['expiry'] == '' )
+						{
+							$listErrors[] = [ 'error_missing_expiry', $infoPack['id'] ];
+						}
+						elseif ( ! preg_match( '/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|' .
+						                       '3[01])( ([01][0-9]|2[0-3]):[0-5][0-9])?$/',
+						                       $infoPack['expiry'] ) )
+						{
+							$listErrors[] = [ 'error_invalid_date_time',
+							                  $infoPack['id'], $infoPack['expiry'] ];
+						}
 					}
 					$listPacks[] = $infoPack;
 					$listPackIDs[] = $infoPack['id'];
@@ -150,6 +166,23 @@ if ( ! empty( $_POST ) )
 		if ( ! isset( $infoPack['id'] ) || $infoPack['id'] == '' )
 		{
 			$listErrors[] = ['error_incomplete_data_row'];
+		}
+		else
+		{
+			if ( $infoCategory['expire'] )
+			{
+				$infoPack['expiry'] = str_replace( 'T', ' ', $infoPack['expiry'] );
+				if ( $infoPack['expiry'] == '' )
+				{
+					$listErrors[] = [ 'error_missing_expiry', $infoPack['id'] ];
+				}
+				elseif ( ! preg_match( '/^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])' .
+				                      '( ([01][0-9]|2[0-3]):[0-5][0-9])?$/', $infoPack['expiry'] ) )
+				{
+					$listErrors[] = [ 'error_invalid_date_time',
+					                  $infoPack['id'], $infoPack['expiry'] ];
+				}
+			}
 		}
 		$listPacks[] = $infoPack;
 		$listPackIDs[] = $infoPack['id'];
@@ -246,80 +279,7 @@ if ( ! empty( $_POST ) )
      <td><?php echo $module->tt('packfield_id'); ?> *</td>
      <td><input type="text" name="id" required></td>
     </tr>
-    <tr>
-<?php
-if ( $infoCategory['trigger'] == 'M' || $infoCategory['valuefield'] != '' )
-{
-?>
-     <td><?php echo $module->tt( 'packfield_value' .
-                                 ( $infoCategory['trigger'] == 'M' ? '_minim' : '' ) ); ?> *</td>
-     <td><input type="text" name="value" required></td>
-<?php
-}
-else
-{
-?>
-     <td><?php echo $module->tt( 'packfield_value' ); ?></td>
-     <td><input type="text" name="value"></td>
-<?php
-}
-?>
-    </tr>
-<?php
-if ( $infoCategory['blocks'] )
-{
-?>
-    <tr>
-     <td><?php echo $module->tt('packfield_block_id'); ?> *</td>
-     <td><input type="text" name="block_id" required></td>
-    </tr>
-<?php
-}
-?>
-<?php
-if ( $infoCategory['expire'] )
-{
-?>
-    <tr>
-     <td><?php echo $module->tt('packfield_expiry'); ?> *</td>
-     <td><input type="datetime-local" name="expiry" required></td>
-    </tr>
-<?php
-}
-foreach ( $infoCategory['extrafields'] as $extraFieldName => $infoExtraField )
-{
-	$extraFieldLabel = $module->escape( $infoExtraField['label'] );
-	$extraFieldType = '"text"';
-	if ( $infoExtraField['type'] == 'date' )
-	{
-		$extraFieldType = '"date"';
-	}
-	elseif ( $infoExtraField['type'] == 'datetime' )
-	{
-		$extraFieldType = '"datetime-local"';
-	}
-	elseif ( $infoExtraField['type'] == 'integer' )
-	{
-		$extraFieldType = '"number"';
-	}
-	elseif ( $infoExtraField['type'] == 'time' )
-	{
-		$extraFieldType = '"time"';
-	}
-	if ( $infoExtraField['required'] )
-	{
-		$extraFieldLabel .= ' *';
-		$extraFieldType .= ' required';
-	}
-?>
-    <tr>
-     <td><?php echo $extraFieldLabel; ?></td>
-     <td><input type=<?php echo $extraFieldType; ?>
-                name="f_<?php echo $module->escape( $extraFieldName ); ?>"></td>
-    </tr>
-<?php
-}
-?>
+<?php $module->writePackFields( $infoCategory ); ?>
     <tr>
      <td></td>
      <td><input type="submit" value="<?php echo $module->tt('save'); ?>"></td>

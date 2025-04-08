@@ -58,5 +58,35 @@
 		"name" : "Assign pack automatically",
 		"expected" : "Packs are assigned by execution of the cron function",
 		"scenario" : "Create pack category and check the assignment takes place as expected"
+	},
+	{
+		"file" : "test_t11Packexpirybuffer.py",
+		"name" : "Pack expiry buffer",
+		"expected" : "Packs which have not expired but are closer to expiry than the buffer are treated as expired and are not assigned",
+		"scenario" : "Create pack category with an expiry buffer, add a pack which expires within the buffer and ensure it is not assigned. Then reduce the expiry buffer so the pack does not expire within the buffer and ensure it can now be assigned."
+	},
+	{
+		"file" : "test_t12Manualreassignment.py",
+		"name" : "Manual reassignment",
+		"expected" : "Packs can be manually assigned, unassigned, reassigned and exchanged by users with the manual reassignment roles",
+		"scenario" : "Create pack category, define roles and confirm packs can be manually assigned, unassigned, reassigned and exchanged (and that pack fields are swapped out in the record data as expected) only by admins and users with roles for manual reassignemnt."
+	},
+	{
+		"file" : "test_t13Editanddeletepacks.py",
+		"name" : "Edit and delete packs",
+		"expected" : "Packs can be edited and deleted by users with the edit and delete roles",
+		"scenario" : "Create pack category, define roles and confirm packs can be edited and deleted only by admins and users with roles for editing and deleting."
+	},
+	{
+		"file" : "test_t14Assignpackselection.py",
+		"name" : "Assign pack using selection trigger",
+		"expected" : "Packs are visible in a drop down once added and can be selected to trigger assignment",
+		"scenario" : "Create pack category and confirm packs assigned only when applicable"
+	},
+	{
+		"file" : "test_t15AssignpackselectionDAG.py",
+		"name" : "Assign pack using selection trigger (w/DAG)",
+		"expected" : "Packs are visible in a drop down only when issued to the respective DAG and can be selected to trigger assignment",
+		"scenario" : "Create pack category and confirm packs assigned only when applicable"
 	}
 ]
