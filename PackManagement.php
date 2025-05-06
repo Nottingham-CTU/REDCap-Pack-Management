@@ -934,6 +934,32 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 
+	// Get the list of packs for manual randomization using the minimization module.
+	public function getMinimManualList( $recordID, $randoField = '' )
+	{
+		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS ' .
+		                          'id FROM redcap_external_module_settings ems JOIN ' .
+		                          'redcap_external_modules em ON ems.external_module_id = ' .
+		                          'em.external_module_id WHERE em.directory_prefix = ? AND ' .
+		                          'ems.`key` LIKE ? AND ' .
+		                          'JSON_CONTAINS(`value`,\'"M"\',\'$.trigger\') ' .
+		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')' .
+		                          'AND JSON_CONTAINS(`value`,?,\'$.valuefield\')',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $this->getProjectId() . '-packcat-%',
+		                            json_encode( $randoField ) ] );
+		$infoCat = $queryCat->fetch_assoc();
+		if ( $infoCat )
+		{
+			$listPacks = $this->getAssignablePacks( $infoCat['id'], $recordID, null, true );
+			$listPacks = $this->getSelectionList( $infoCat['id'], $listPacks );
+			return $listPacks;
+		}
+		return [];
+	}
+
+
+
 	// Get the minimization pack project field.
 	public function getMinimPackField( $randoField = '' )
 	{
