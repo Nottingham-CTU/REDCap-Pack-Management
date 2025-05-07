@@ -640,8 +640,9 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                            'AND em.directory_prefix = ? AND ems.key = ? ' .
 		                            'AND packlist.invalid = 0' . $sqlPacks . ') ' .
 		                            'SELECT id, extrafields, (SELECT count(*) FROM packs p ' .
-		                            'WHERE p.assigned = 0) count FROM packs WHERE assigned = 0 ' .
-		                            $sqlPacks2 . ' ORDER BY expiry, if((SELECT count(*) ' .
+		                            'WHERE p.assigned = 0) count, expiry ' .
+		                            'FROM packs WHERE assigned = 0 ' . $sqlPacks2 . ' ' .
+		                            'ORDER BY expiry, if((SELECT count(*) ' .
 		                            'FROM packs p WHERE packs.block_id = p.block_id ' .
 		                            'AND p.assigned = 1)>0,0,1), (SELECT count(*) ' .
 		                            'FROM packs p WHERE packs.block_id = p.block_id ' .
@@ -679,6 +680,10 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		if ( $infoCat['countfield'] != '' )
 		{
 			$infoValues[ $infoCat['countfield'] ] = $infoPack['count'] - 1;
+		}
+		if ( $infoCat['expire'] && ( $infoCat['expirefield'] ?? '' ) != '' )
+		{
+			$infoValues[ $infoCat['expirefield'] ] = $infoPack['expiry'];
 		}
 		$listPackExtraFields = json_decode( $infoPack['extrafields'], true );
 		foreach ( $infoCat['extrafields'] as $extraFieldName => $infoCatExtraField )

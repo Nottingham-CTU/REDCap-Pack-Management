@@ -25,8 +25,9 @@ if ( $new )
 	                  'form' => '', 'logic' => '', 'nominim' => '', 'sel_label' => '',
 	                  'dags' => false, 'dags_rcpt' => false, 'blocks' => false, 'expire' => true,
 	                  'expire_buf' => 0, 'packfield' => '', 'datefield' => '', 'countfield' => '',
-	                  'valuefield' => '', 'extrafields' => [], 'psendfield' => '',
-	                  'prcptfield' => '', 'preturnfield' => '', 'ptrnssave_ri' => false,
+	                  'expirefield' => '', 'valuefield' => '', 'extrafields' => [],
+	                  'psendfield' => '', 'prcptfield' => '', 'preturnfield' => '',
+	                  'ptrnssave_ri' => false,
 	                  'roles_view' => [], 'roles_dags' => [], 'roles_invalid' => [],
 	                  'roles_assign' => [], 'roles_add' => [], 'roles_edit' => [] ];
 }
@@ -114,7 +115,7 @@ else
 		$infoCategory = [ 'id' => $_GET['cat_id'] ];
 		foreach ( [ 'enabled', 'trigger', 'form', 'logic', 'nominim', 'sel_label', 'dags',
 		            'dags_rcpt', 'blocks', 'expire', 'expire_buf', 'packfield', 'datefield',
-		            'countfield', 'valuefield' ]
+		            'countfield', 'expirefield', 'valuefield' ]
 		          as $fieldName )
 		{
 			if ( in_array( $fieldName, [ 'enabled', 'dags', 'dags_rcpt', 'blocks', 'expire' ] ) )
@@ -411,6 +412,13 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
     <td>
      <?php echo $module->getProjectFieldsSelect( 'countfield', $infoCategory['countfield'],
                                                  '', 'integer' ), "\n"; ?>
+    </td>
+   </tr>
+   <tr data-pack-expire="1">
+    <td><?php echo $module->tt('pack_expire_proj_field'); ?></td>
+    <td>
+     <?php echo $module->getProjectFieldsSelect( 'expirefield', $infoCategory['expirefield'],
+                                                 '', 'datetime' ), "\n"; ?>
     </td>
    </tr>
    <tr data-valuefield="1">
