@@ -257,6 +257,7 @@ class TestT12Manualreassignment():
     self.driver.find_element(By.ID, "password").send_keys("abc123")
     self.driver.find_element(By.ID, "login_btn").click()
     self.driver.find_element(By.LINK_TEXT, "Pack Management Test").click()
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=packs\"]")))
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=packs\"]").click()
     elements = self.driver.find_elements(By.CSS_SELECTOR, "a[href*=\"page=packs_list\"][href*=\"cat_id=packs12\"]")
     assert len(elements) > 0
@@ -269,6 +270,7 @@ class TestT12Manualreassignment():
     self.driver.find_element(By.ID, "password").send_keys("abc123")
     self.driver.find_element(By.ID, "login_btn").click()
     self.driver.find_element(By.LINK_TEXT, "Pack Management Test").click()
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=packs\"]")))
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=packs\"]").click()
     elements = self.driver.find_elements(By.CSS_SELECTOR, "a[href*=\"page=packs_list\"][href*=\"cat_id=packs12\"]")
     assert len(elements) > 0
