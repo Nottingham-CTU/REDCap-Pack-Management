@@ -25,8 +25,9 @@ if ( $new )
 	                  'form' => '', 'logic' => '', 'nominim' => '', 'sel_label' => '',
 	                  'dags' => false, 'dags_rcpt' => false, 'blocks' => false, 'expire' => true,
 	                  'expire_buf' => 0, 'packfield' => '', 'datefield' => '', 'countfield' => '',
-	                  'valuefield' => '', 'extrafields' => [], 'psendfield' => '',
-	                  'prcptfield' => '', 'preturnfield' => '', 'ptrnssave_ri' => false,
+	                  'expirefield' => '', 'valuefield' => '', 'extrafields' => [],
+	                  'psendfield' => '', 'prcptfield' => '', 'preturnfield' => '',
+	                  'ptrnssave_ri' => false,
 	                  'roles_view' => [], 'roles_dags' => [], 'roles_invalid' => [],
 	                  'roles_assign' => [], 'roles_add' => [], 'roles_edit' => [] ];
 }
@@ -114,7 +115,7 @@ else
 		$infoCategory = [ 'id' => $_GET['cat_id'] ];
 		foreach ( [ 'enabled', 'trigger', 'form', 'logic', 'nominim', 'sel_label', 'dags',
 		            'dags_rcpt', 'blocks', 'expire', 'expire_buf', 'packfield', 'datefield',
-		            'countfield', 'valuefield' ]
+		            'countfield', 'expirefield', 'valuefield' ]
 		          as $fieldName )
 		{
 			if ( in_array( $fieldName, [ 'enabled', 'dags', 'dags_rcpt', 'blocks', 'expire' ] ) )
@@ -332,7 +333,7 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
      </select>
     </td>
    </tr>
-   <tr data-trigger-select="1">
+   <tr data-selectionlabel="1" data-trigger-minim="1" data-trigger-select="1">
     <td><?php echo $module->tt('selection_label'); ?></td>
     <td>
      <input type="text" name="sel_label"
@@ -411,6 +412,13 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
     <td>
      <?php echo $module->getProjectFieldsSelect( 'countfield', $infoCategory['countfield'],
                                                  '', 'integer' ), "\n"; ?>
+    </td>
+   </tr>
+   <tr data-pack-expire="1">
+    <td><?php echo $module->tt('pack_expire_proj_field'); ?></td>
+    <td>
+     <?php echo $module->getProjectFieldsSelect( 'expirefield', $infoCategory['expirefield'],
+                                                 '', 'datetime' ), "\n"; ?>
     </td>
    </tr>
    <tr data-valuefield="1">
@@ -553,6 +561,8 @@ if ( $canDelete )
    var vVal = $(this).val()
    $('[data-trigger-auto], [data-trigger-form], [data-trigger-minim], [data-trigger-select]')
      .css('display','none')
+   $('[data-selectionlabel] td:first-child')
+     .text(<?php echo $module->escapeJSString($module->tt('selection_label')); ?>)
    $('[data-valuefield] td:first-child')
      .text(<?php echo $module->escapeJSString($module->tt('pack_value_proj_field')); ?>)
    switch ( vVal )
@@ -565,6 +575,8 @@ if ( $canDelete )
        break
      case 'M':
        $('[data-trigger-minim]').css('display','')
+       $('[data-selectionlabel] td:first-child')
+         .text(<?php echo $module->escapeJSString($module->tt('selection_label_rando')); ?>)
        $('[data-valuefield] td:first-child')
          .text(<?php echo $module->escapeJSString($module->tt('pack_value_proj_field_rando')); ?>)
        break

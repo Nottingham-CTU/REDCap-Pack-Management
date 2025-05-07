@@ -640,8 +640,9 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                            'AND em.directory_prefix = ? AND ems.key = ? ' .
 		                            'AND packlist.invalid = 0' . $sqlPacks . ') ' .
 		                            'SELECT id, extrafields, (SELECT count(*) FROM packs p ' .
-		                            'WHERE p.assigned = 0) count FROM packs WHERE assigned = 0 ' .
-		                            $sqlPacks2 . ' ORDER BY expiry, if((SELECT count(*) ' .
+		                            'WHERE p.assigned = 0) count, expiry ' .
+		                            'FROM packs WHERE assigned = 0 ' . $sqlPacks2 . ' ' .
+		                            'ORDER BY expiry, if((SELECT count(*) ' .
 		                            'FROM packs p WHERE packs.block_id = p.block_id ' .
 		                            'AND p.assigned = 1)>0,0,1), (SELECT count(*) ' .
 		                            'FROM packs p WHERE packs.block_id = p.block_id ' .
@@ -679,6 +680,10 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		if ( $infoCat['countfield'] != '' )
 		{
 			$infoValues[ $infoCat['countfield'] ] = $infoPack['count'] - 1;
+		}
+		if ( $infoCat['expire'] && ( $infoCat['expirefield'] ?? '' ) != '' )
+		{
+			$infoValues[ $infoCat['expirefield'] ] = $infoPack['expiry'];
 		}
 		$listPackExtraFields = json_decode( $infoPack['extrafields'], true );
 		foreach ( $infoCat['extrafields'] as $extraFieldName => $infoCatExtraField )
@@ -930,6 +935,32 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 	{
 		return method_exists( '\REDCap', 'getDataTable' )
 		       ? \REDCap::getDataTable( $projectID ) : 'redcap_data';
+	}
+
+
+
+	// Get the list of packs for manual randomization using the minimization module.
+	public function getMinimManualList( $recordID, $randoField = '' )
+	{
+		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS ' .
+		                          'id FROM redcap_external_module_settings ems JOIN ' .
+		                          'redcap_external_modules em ON ems.external_module_id = ' .
+		                          'em.external_module_id WHERE em.directory_prefix = ? AND ' .
+		                          'ems.`key` LIKE ? AND ' .
+		                          'JSON_CONTAINS(`value`,\'"M"\',\'$.trigger\') ' .
+		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\')' .
+		                          'AND JSON_CONTAINS(`value`,?,\'$.valuefield\')',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $this->getProjectId() . '-packcat-%',
+		                            json_encode( $randoField ) ] );
+		$infoCat = $queryCat->fetch_assoc();
+		if ( $infoCat )
+		{
+			$listPacks = $this->getAssignablePacks( $infoCat['id'], $recordID, null, true );
+			$listPacks = $this->getSelectionList( $infoCat['id'], $listPacks );
+			return $listPacks;
+		}
+		return [];
 	}
 
 
