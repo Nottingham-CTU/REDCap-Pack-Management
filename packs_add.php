@@ -39,9 +39,16 @@ if ( ! $canConfigure && ! in_array( $roleName, $infoCategory['roles_add'] ) )
 if ( ! empty( $_POST ) )
 {
 	// Set up default values for a pack.
+	$defaultDAG = null;
+	$defaultDAGRcpt = true;
+	if ( $infoCategory['dags'] && $userRights['group_id'] != '' )
+	{
+		$defaultDAG = strval( $userRights['group_id'] );
+		$defaultDAGRcpt = ! $infoCategory['dags_rcpt'];
+	}
 	$defaultPack = [ 'id' => '', 'value' => '', 'block_id' => '', 'expiry' => null,
-	                 'extrafields' => [], 'dag' => null, 'dag_rcpt' => true, 'assigned' => false,
-	                 'invalid' => false, 'invalid_desc' => '' ];
+	                 'extrafields' => [], 'dag' => $defaultDAG, 'dag_rcpt' => $defaultDAGRcpt,
+	                 'assigned' => false, 'invalid' => false, 'invalid_desc' => '' ];
 	foreach ( $infoCategory['extrafields'] as $extraFieldName => $infoExtraField )
 	{
 		$defaultPack['extrafields'][ $extraFieldName ] =
@@ -266,6 +273,13 @@ if ( ! empty( $_POST ) )
 <p style="font-size:1.3em">
  <?php echo $module->tt('add_packs'), ' &#8211; ', $module->escape( $infoCategory['id'] ), "\n"; ?>
 </p>
+
+<?php
+if ( $infoCategory['dags'] && $userRights['group_id'] != '' )
+{
+	echo '<p>', $module->tt( 'pack_add_dag', $listDAGs[ $userRights['group_id'] ] ), '</p>';
+}
+?>
 
 <div id="addpackstabs" style="width:97%">
  <ul>
