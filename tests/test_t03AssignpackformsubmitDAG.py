@@ -90,6 +90,7 @@ class TestT03AssignpackformsubmitDAG():
     self.driver.find_element(By.CSS_SELECTOR, "input[name=\"pack_id\"][value=\"2\"]").click()
     elements = self.driver.find_elements(By.CSS_SELECTOR, ".packmgmt-packissue input[type=\"submit\"]:not([disabled])")
     assert len(elements) > 0
+    time.sleep(2)
     dropdown = self.driver.find_element(By.NAME, "dag_id")
     dropdown.find_element(By.XPATH, "//option[. = 'DAG1']").click()
     self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-packissue input[type=\"submit\"]").click()

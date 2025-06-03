@@ -20,6 +20,7 @@ class TestT12Manualreassignment():
   
   def test_t12Manualreassignment(self):
     self.driver.get("http://127.0.0.1/")
+    self.driver.execute_script("sessionStorage.setItem(\'github_js_actions\',\'1\')")
     self.driver.find_element(By.LINK_TEXT, "My Projects").click()
     elements = self.driver.find_elements(By.XPATH, "//*[@id=\"table-proj_table\"][contains(.,\'Pack Management Test\')]")
     assert len(elements) > 0
