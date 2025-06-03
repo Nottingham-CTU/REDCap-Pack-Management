@@ -297,6 +297,10 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			return;
 		}
 
+		// Set the global pid variable to the provided projectID in case another module changed it.
+		$oldGetPid = $_GET['pid'];
+		$_GET['pid'] = (string) $projectID;
+
 		$this->dbGetLock();
 		// Get the pack categories which are relevant to this submission, excluding selection
 		// triggers which are handled later.
@@ -314,7 +318,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                            'OR ( JSON_CONTAINS(`value`,\'"F"\',\'$.trigger\') ' .
 		                              'AND JSON_CONTAINS(`value`,?,\'$.form\') ) )',
 		                          [ $this->getModuleDirectoryBaseName(),
-		                            'p' . $this->getProjectId() . '-packcat-%',
+		                            'p' . $projectID . '-packcat-%',
 		                            json_encode( $instrument ) ] );
 		$listCat = [];
 		while ( $infoCat = $queryCat->fetch_assoc() )
@@ -358,7 +362,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\') ' .
 		                          'AND ( JSON_CONTAINS(`value`,\'"S"\',\'$.trigger\') )',
 		                          [ $this->getModuleDirectoryBaseName(),
-		                            'p' . $this->getProjectId() . '-packcat-%' ] );
+		                            'p' . $projectID . '-packcat-%' ] );
 		$listCat = [];
 		while( $infoCat = $queryCat->fetch_assoc() )
 		{
@@ -378,6 +382,9 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			                     ( $infoData !== false ? $infoData : [ $packField => '' ] ) );
 		}
 		$this->dbReleaseLock();
+
+		// Restore the original global pid variable.
+		$_GET['pid'] = $oldGetPid;
 	}
 
 
