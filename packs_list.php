@@ -594,6 +594,13 @@ if ( isset( $_SESSION['pack_management_listerrors'] ) )
  <?php echo $module->tt('view_packs'), ' &#8211; ', $module->escape( $infoCategory['id'] ), "\n"; ?>
 </p>
 
+<?php
+if ( $infoCategory['dags'] && $userRights['group_id'] != '' )
+{
+	echo '<p>', $module->tt( 'pack_list_dag', $listDAGs[ $userRights['group_id'] ] ), '</p>';
+}
+?>
+
 <p>
  <?php echo $module->tt('total_packs'), ' ', $totalPacks, '<br>',
             $module->tt('available_packs'), ' ', $availablePacks, '<br>',
