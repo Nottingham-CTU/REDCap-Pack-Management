@@ -1515,22 +1515,49 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			{
 				font-size: 90%;
 			}
+			.mod-packmgmt-listtable-container
+			{
+				width: 97%;
+				max-height: 400px;
+				overflow-y: scroll;
+				border: solid 1px #000;
+				border-width: 2px 1px 1px 2px;
+			}
 			.mod-packmgmt-listtable
 			{
 				width: 97%;
-				border: solid 1px #000;
-				border-collapse: collapse;
+				border: solid #000;
+				border-collapse: separate;
+				border-spacing: 0px;
+				border-width: 2px 1px 1px 2px;
+			}
+			.mod-packmgmt-listtable-container .mod-packmgmt-listtable
+			{
+				width: 100%;
+				border: none;
+			}
+			.mod-packmgmt-listtable-container .mod-packmgmt-listtable thead
+			{
+				position: sticky;
+				top: 0px;
+				background: #fff;
 			}
 			.mod-packmgmt-listtable th
 			{
 				padding: 8px 5px;
 				font-weight: bold;
-				border: solid 1px #000;
+				border-right: solid 1px #000;
+				border-bottom: solid 2px #000;
 			}
 			.mod-packmgmt-listtable td
 			{
 				padding: 3px;
-				border: solid 1px #000;
+				border-right: solid 1px #000;
+				border-bottom: solid 1px #000;
+			}
+			.mod-packmgmt-listtable label
+			{
+				margin: 0;
 			}
 			.mod-packmgmt-okmsg
 			{
@@ -1549,6 +1576,17 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 				border: solid 1px #f1aeb5;
 				border-radius: 0.375rem;
 				padding: 1rem;
+			}
+			.mod-packmgmt-vhide
+			{
+				border: 0;
+				height: 1px;
+				margin: -1px;
+				overflow: hidden;
+				padding: 0;
+				position: absolute;
+				white-space: nowrap;
+				width: 1px;
 			}
 			';
 		echo '<script type="text/javascript">',

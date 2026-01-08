@@ -166,8 +166,8 @@ if ( isset( $_POST['action'] ) )
 			}
 			if ( ! empty( array_intersect_key( $listChosenBlocks, $listUnchosenBlocks ) ) )
 			{
-				$listErrors[] = 'mark_packs_rcpt_error' .
-				                ( $infoCategory['blocks'] ? '_wb' : '_nb' );
+				$listErrors[] = [ 'mark_packs_rcpt_error' .
+				                  ( $infoCategory['blocks'] ? '_wb' : '_nb' ) ];
 			}
 		}
 		if ( empty( $listErrors ) )
@@ -209,8 +209,8 @@ if ( isset( $_POST['action'] ) )
 			}
 			if ( ! empty( array_intersect_key( $listChosenBlocks, $listUnchosenBlocks ) ) )
 			{
-				$listErrors[] = 'issue_unissue_packs_error' .
-				                ( $infoCategory['blocks'] ? '_wb' : '_nb' );
+				$listErrors[] = [ 'issue_unissue_packs_error' .
+				                  ( $infoCategory['blocks'] ? '_wb' : '_nb' ) ];
 			}
 		}
 		if ( empty( $listErrors ) )
@@ -257,7 +257,7 @@ if ( isset( $_POST['action'] ) )
 				{
 					if ( $infoPack['assigned'] )
 					{
-						$listErrors[] = 'mark_unmark_packs_invalid_error';
+						$listErrors[] = [ 'mark_unmark_packs_invalid_error' ];
 						break;
 					}
 					if ( $infoPack['invalid'] )
@@ -272,7 +272,7 @@ if ( isset( $_POST['action'] ) )
 			}
 			if ( ! empty( $listValidPacks ) && ! empty( $listInvalidPacks ) )
 			{
-				$listErrors[] = 'mark_unmark_packs_invalid_error';
+				$listErrors[] = [ 'mark_unmark_packs_invalid_error' ];
 			}
 		}
 		if ( empty( $listErrors ) )
@@ -308,7 +308,7 @@ if ( isset( $_POST['action'] ) )
 		     ( ( $_POST['record_id'] ?? '' ) == '' || ( $_POST['instance'] ?? '' ) == '' ||
 		       ( \REDCap::isLongitudinal() && ( $_POST['event_id'] ?? '' ) == '' ) ) )
 		{
-			$listErrors[] = 'assign_reassign_packs_error_rei';
+			$listErrors[] = [ 'assign_reassign_packs_error_rei' ];
 		}
 		// Validate the selected packs. There must be exactly 1 or 2 packs selected.
 		// If 2 packs are selected, they will be exchanged. At least 1 of these packs must be
@@ -317,7 +317,7 @@ if ( isset( $_POST['action'] ) )
 		if ( ( count( $listChosen ) != 1 && count( $listChosen ) != 2 ) ||
 		     ( count( $listChosen ) == 2 && $_POST['record_id'] ?? '' != '' ) )
 		{
-			$listErrors[] = 'assign_reassign_packs_error';
+			$listErrors[] = [ 'assign_reassign_packs_error' ];
 		}
 		else
 		{
@@ -344,7 +344,7 @@ if ( isset( $_POST['action'] ) )
 			}
 			if ( $hasInvalidPacks || ( count( $listChosen ) == 2 && empty( $listAssignedPacks ) ) )
 			{
-				$listErrors[] = 'assign_reassign_packs_error';
+				$listErrors[] = [ 'assign_reassign_packs_error' ];
 			}
 		}
 		if ( empty( $listErrors ) )
@@ -656,32 +656,36 @@ if ( $invalidPacks > 0 )
  </p>
 </div>
 
-<table class="mod-packmgmt-listtable" style="opacity:0;border-width:2px">
- <tr>
-  <th style="width:45px"></th>
-  <th><?php echo $module->tt('packfield_id'); ?></th>
+<div class="mod-packmgmt-listtable-container">
+ <table class="mod-packmgmt-listtable" style="opacity:0;border-width:2px">
+  <thead>
+   <tr>
+    <th style="width:45px"></th>
+    <th><?php echo $module->tt('packfield_id'); ?></th>
 <?php
 if ( $infoCategory['blocks'] )
 {
 ?>
-  <th><?php echo $module->tt('packfield_block_id'); ?></th>
+    <th><?php echo $module->tt('packfield_block_id'); ?></th>
 <?php
 }
 if ( $infoCategory['dags'] && $userRights['group_id'] == '' )
 {
 ?>
-  <th><?php echo $module->tt('dag'); ?></th>
+    <th><?php echo $module->tt('dag'); ?></th>
 <?php
 }
 if ( $infoCategory['expire'] )
 {
 ?>
-  <th><?php echo $module->tt('packfield_expiry'); ?></th>
+    <th><?php echo $module->tt('packfield_expiry'); ?></th>
 <?php
 }
 ?>
-  <th class="pack-col-assign"><?php echo $module->tt('assignment'); ?></th>
- </tr>
+    <th class="pack-col-assign"><?php echo $module->tt('assignment'); ?></th>
+   </tr>
+  </thead>
+  <tbody>
 <?php
 $row = 0;
 foreach ( $listPacks as $infoPack )
@@ -692,9 +696,10 @@ foreach ( $listPacks as $infoPack )
 	$packExpired = ( $infoPack['expiry'] != '' && $infoPack['expiry'] < date('Y-m-d H:i:s') );
 
 ?>
- <tr>
-  <td style="text-align:center">
-   <input type="checkbox" name="pack_id" data-pack-chkbx="<?php echo ++$row; ?>"
+   <tr>
+    <td style="text-align:center">
+     <label>
+      <input type="checkbox" name="pack_id" data-pack-chkbx="<?php echo ++$row; ?>"
              value="<?php echo $module->escape( $infoPack['id'] ); ?>"
              data-block-id="<?php echo $module->escape( $infoPack['block_id'] ); ?>"
              data-assigned="<?php echo $infoPack['assigned'] ? 'true' : 'false'; ?>"
@@ -703,8 +708,12 @@ foreach ( $listPacks as $infoPack )
              data-dag-rcpt="<?php echo $infoPack['dag_rcpt'] ? 'true' : 'false'; ?>"
              data-expired="<?php echo $packExpired ? 'true' : 'false'; ?>"
              title="<?php echo $module->tt('tooltip_chkbx_shift'); ?>">
-  </td>
-  <td>
+      <span class="mod-packmgmt-vhide">
+       <?php echo $module->tt('packfield_id_v', $infoPack['id'] ), "\n"; ?>
+      </span>
+     </label>
+    </td>
+    <td>
 <?php
 	echo '   ';
 	if ( $canConfigure || in_array( $roleName, $infoCategory['roles_edit'] ) )
@@ -721,38 +730,43 @@ foreach ( $listPacks as $infoPack )
 	}
 	echo "\n";
 ?>
-   <span style="float:right">
-    <?php echo $infoPack['assigned'] ? ( '<i class="far fa-square-check" title="' .
-                                         $module->tt('tooltip_pack_assigned') . '"></i>' )
-                                     : ''; ?>
-    <?php echo $infoPack['invalid'] ? ( '<i class="fas fa-ban" title="' .
-                                        $module->escape( $infoPack['invalid_desc'] ) .
-                                        '"></i>&nbsp;' ) : '', "\n"; ?>
-   </span>
-  </td>
+     <span style="float:right">
+      <?php echo $infoCategory['dags'] && $userRights['group_id'] != '' &&
+                 ! $infoPack['dag_rcpt'] ? ( '<i class="fas fa-truck"></i>' )
+                                         : '', "\n"; ?>
+      <?php echo $infoPack['assigned'] ? ( '<i class="far fa-square-check" title="' .
+                                           $module->tt('tooltip_pack_assigned') . '"></i>' )
+                                       : '', "\n"; ?>
+      <?php echo $infoPack['invalid'] ? ( '<i class="fas fa-ban" title="' .
+                                          $module->escape( $infoPack['invalid_desc'] ) . '"></i>' )
+                                      : '', "\n"; ?>
+      <?php echo $infoPack['assigned'] || $infoPack['invalid'] ? ''
+                                 : '<span style="display:inline-block:width:16px"></span>', "\n"; ?>
+     </span>
+    </td>
 <?php
 	if ( $infoCategory['blocks'] )
 	{
 ?>
-  <td><?php echo $module->escape( $infoPack['block_id'] ); ?></td>
+    <td><?php echo $module->escape( $infoPack['block_id'] ); ?></td>
 <?php
 	}
 	if ( $infoCategory['dags'] && $userRights['group_id'] == '' )
 	{
 ?>
-  <td><?php echo $infoPack['dag'] == '' ? '&#8212;'
-                                        : $module->escape( $listDAGs[ $infoPack['dag'] ] ),
-                 $infoPack['dag_rcpt'] ? '' : ' <i class="fas fa-truck"></i>'; ?></td>
+    <td><?php echo $infoPack['dag'] == '' ? '&#8212;'
+                                          : $module->escape( $listDAGs[ $infoPack['dag'] ] ),
+                   $infoPack['dag_rcpt'] ? '' : ' <i class="fas fa-truck"></i>'; ?></td>
 <?php
 	}
 	if ( $infoCategory['expire'] )
 	{
 ?>
-  <td><?php echo $module->escape( \DateTimeRC::format_ts_from_ymd( $infoPack['expiry'] ) ); ?></td>
+    <td><?php echo $module->escape( \DateTimeRC::format_ts_from_ymd( $infoPack['expiry'] ) ); ?></td>
 <?php
 	}
 ?>
-  <td class="pack-col-assign"><?php
+    <td class="pack-col-assign"><?php
 	if ( $packAssigned !== false )
 	{
 		echo $module->escape( $packAssigned['record'] ), ' (';
@@ -767,11 +781,13 @@ foreach ( $listPacks as $infoPack )
 		echo '<i>', $module->tt('no_record'), '</i>';
 	}
 ?></td>
- </tr>
+   </tr>
 <?php
 }
 ?>
-</table>
+  </tbody>
+ </table>
+</div>
 
 <p>&nbsp;</p>
 
@@ -787,189 +803,193 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_view'] ) &&
 <p style="font-size:1.3em">
  <?php echo $module->tt('with_selected_packs'), "\n"; ?>
 </p>
+<div class="packmgmt-submitset" style="width:97%">
 <?php
 	if ( ( $canConfigure || in_array( $roleName, $infoCategory['roles_view'] ) ) &&
 	     $infoCategory['dags'] && $infoCategory['dags_rcpt'] )
 	{
 ?>
-<form method="post" class="packmgmt-packrcpt">
- <table class="mod-packmgmt-formtable" style="margin-bottom:10px">
-  <tr>
-   <th colspan="2"><?php echo $module->tt('mark_packs_rcpt'); ?></th>
-  </tr>
-  <tr>
-   <td colspan="2" class="errmsg" style="color:#58151c;display:none;text-align:left">
-    <?php echo $module->tt( 'mark_packs_rcpt_error' .
-                            ( $infoCategory['blocks'] ? '_wb' : '_nb' ) ), "\n"; ?>
-   </td>
-  </tr>
-  <tr>
-   <td></td>
-   <td>
-    <input type="hidden" name="action" value="rcpt">
-    <input type="hidden" name="packs" value="">
-    <input type="submit" value="<?php echo $module->tt('save'); ?>">
-   </td>
-  </tr>
- </table>
-</form>
+ <div style="font-size:1.1em"><?php echo $module->tt('mark_packs_rcpt'); ?></div>
+ <form method="post" class="packmgmt-packrcpt" style="padding:0.7em">
+  <table class="mod-packmgmt-formtable" style="border:none">
+   <tr>
+    <td colspan="2" class="errmsg" style="color:#58151c;display:none;text-align:left">
+     <?php echo $module->tt( 'mark_packs_rcpt_error' .
+                             ( $infoCategory['blocks'] ? '_wb' : '_nb' ) ), "\n"; ?>
+    </td>
+   </tr>
+   <tr>
+    <td></td>
+    <td>
+     <input type="hidden" name="action" value="rcpt">
+     <input type="hidden" name="packs" value="">
+     <button type="submit" class="btn btn-sm btn-primaryrc">
+      <i class="fas fa-save fs14"></i> &nbsp;<?php echo $module->tt('save'), "\n"; ?>
+     </button>
+    </td>
+   </tr>
+  </table>
+ </form>
 <?php
 	}
 	if ( ( $canConfigure || in_array( $roleName, $infoCategory['roles_dags'] ) ) &&
 	     $infoCategory['dags'] && $userRights['group_id'] == '' )
 	{
 ?>
-<form method="post" class="packmgmt-packissue">
- <table class="mod-packmgmt-formtable" style="margin-bottom:10px">
-  <tr>
-   <th colspan="2"><?php echo $module->tt('issue_unissue_packs'); ?></th>
-  </tr>
-  <tr>
-   <td colspan="2" class="errmsg" style="color:#58151c;display:none;text-align:left">
-    <?php echo $module->tt( 'issue_unissue_packs_error' .
-                            ( $infoCategory['blocks'] ? '_wb' : '_nb' ) ), "\n"; ?>
-   </td>
-  </tr>
-  <tr>
-   <td><?php echo $module->tt('dag'); ?></td>
-   <td>
-    <select name="dag_id">
-     <option value=""><?php echo $module->tt('opt_none'); ?></option>
+ <div style="font-size:1.1em"><?php echo $module->tt('issue_unissue_packs'); ?></div>
+ <form method="post" class="packmgmt-packissue" style="padding:0.7em">
+  <table class="mod-packmgmt-formtable" style="border:none">
+   <tr>
+    <td colspan="2" class="errmsg" style="color:#58151c;display:none;text-align:left">
+     <?php echo $module->tt( 'issue_unissue_packs_error' .
+                             ( $infoCategory['blocks'] ? '_wb' : '_nb' ) ), "\n"; ?>
+    </td>
+   </tr>
+   <tr>
+    <td><?php echo $module->tt('dag'); ?></td>
+    <td>
+     <select name="dag_id">
+      <option value=""><?php echo $module->tt('opt_none'); ?></option>
 <?php
 		foreach ( $listDAGs as $dagID => $dagName )
 		{
 ?>
-     <option value="<?php echo $dagID; ?>"><?php echo $module->escape( $dagName ); ?></option>
+      <option value="<?php echo $dagID; ?>"><?php echo $module->escape( $dagName ); ?></option>
 <?php
 		}
 ?>
-    </select>
-   </td>
-  </tr>
-  <tr>
-   <td></td>
-   <td>
-    <input type="hidden" name="action" value="issue">
-    <input type="hidden" name="packs" value="">
-    <input type="submit" value="<?php echo $module->tt('save'); ?>">
-   </td>
-  </tr>
- </table>
-</form>
+     </select>
+    </td>
+   </tr>
+   <tr>
+    <td></td>
+    <td>
+     <input type="hidden" name="action" value="issue">
+     <input type="hidden" name="packs" value="">
+     <button type="submit" class="btn btn-sm btn-primaryrc">
+      <i class="fas fa-save fs14"></i> &nbsp;<?php echo $module->tt('save'), "\n"; ?>
+     </button>
+    </td>
+   </tr>
+  </table>
+ </form>
 <?php
 	}
 	if ( $canConfigure || in_array( $roleName, $infoCategory['roles_invalid'] ) )
 	{
 ?>
-<form method="post" class="packmgmt-packinvalid">
- <table class="mod-packmgmt-formtable" style="margin-bottom:10px">
-  <tr>
-   <th colspan="2"><?php echo $module->tt('mark_unmark_packs_invalid'); ?></th>
-  </tr>
-  <tr>
-   <td colspan="2" class="errmsg" style="color:#58151c;display:none;text-align:left">
-    <?php echo $module->tt('mark_unmark_packs_invalid_error'), "\n"; ?>
-   </td>
-  </tr>
-  <tr>
-   <td class="desclbl"><?php echo $module->tt('mark_invalid_reason'); ?></td>
-   <td>
-    <textarea name="invalid_desc"></textarea>
-   </td>
-  </tr>
-  <tr>
-   <td></td>
-   <td>
-    <input type="hidden" name="action" value="invalid">
-    <input type="hidden" name="packs" value="">
-    <input type="submit" value="<?php echo $module->tt('save'); ?>">
-   </td>
-  </tr>
-  </tr>
- </table>
-</form>
+ <div style="font-size:1.1em"><?php echo $module->tt('mark_unmark_packs_invalid'); ?></div>
+ <form method="post" class="packmgmt-packinvalid" style="padding:0.7em">
+  <table class="mod-packmgmt-formtable" style="border:none">
+   <tr>
+    <td colspan="2" class="errmsg" style="color:#58151c;display:none;text-align:left">
+     <?php echo $module->tt('mark_unmark_packs_invalid_error'), "\n"; ?>
+    </td>
+   </tr>
+   <tr>
+    <td class="desclbl"><?php echo $module->tt('mark_invalid_reason'); ?></td>
+    <td>
+     <textarea name="invalid_desc"></textarea>
+    </td>
+   </tr>
+   <tr>
+    <td></td>
+    <td>
+     <input type="hidden" name="action" value="invalid">
+     <input type="hidden" name="packs" value="">
+     <button type="submit" class="btn btn-sm btn-primaryrc">
+      <i class="fas fa-save fs14"></i> &nbsp;<?php echo $module->tt('save'), "\n"; ?>
+     </button>
+    </td>
+   </tr>
+   </tr>
+  </table>
+ </form>
 <?php
 	}
 	if ( $canConfigure || in_array( $roleName, $infoCategory['roles_assign'] ) )
 	{
 ?>
-<form method="post" class="packmgmt-packassign">
- <table class="mod-packmgmt-formtable" style="margin-bottom:10px">
-  <tr>
-   <th colspan="2"><?php echo $module->tt('assign_reassign_packs'); ?></th>
-  </tr>
-  <tr>
-   <td colspan="2" class="errmsg" style="color:#58151c;display:none;text-align:left">
-    <?php echo $module->tt('assign_reassign_packs_error'), "\n"; ?>
-   </td>
-  </tr>
-  <tr>
-   <td><?php echo $module->tt('record'); ?></td>
-   <td>
-    <select name="record_id">
-     <option value=""><?php echo $module->tt('opt_none'); ?></option>
+ <div style="font-size:1.1em"><?php echo $module->tt('assign_reassign_packs'); ?></div>
+ <form method="post" class="packmgmt-packassign" style="padding:0.7em">
+  <table class="mod-packmgmt-formtable" style="border:none">
+   <tr>
+    <td colspan="2" class="errmsg" style="color:#58151c;display:none;text-align:left">
+     <?php echo $module->tt('assign_reassign_packs_error'), "\n"; ?>
+    </td>
+   </tr>
+   <tr>
+    <td><?php echo $module->tt('record'); ?></td>
+    <td>
+     <select name="record_id">
+      <option value=""><?php echo $module->tt('opt_none'); ?></option>
 <?php
 		foreach ( $listRecords as $recordID )
 		{
 ?>
-     <option><?php echo $module->escape( $recordID ); ?></option>
+      <option><?php echo $module->escape( $recordID ); ?></option>
 <?php
 		}
 ?>
-    </select>
-   </td>
-  </tr>
+     </select>
+    </td>
+   </tr>
 <?php
 		if ( \REDCap::isLongitudinal() )
 		{
 ?>
-  <tr>
-   <td><?php echo $module->tt('event'); ?></td>
-   <td>
-    <select name="event_id">
-     <option value=""><?php echo $module->tt('opt_none'); ?></option>
+   <tr>
+    <td><?php echo $module->tt('event'); ?></td>
+    <td>
+     <select name="event_id">
+      <option value=""><?php echo $module->tt('opt_none'); ?></option>
 <?php
 			foreach ( $listEvents as $eventID => $eventName )
 			{
 ?>
-     <option value="<?php echo $eventID; ?>"><?php echo $module->escape( $eventName ); ?></option>
+      <option value="<?php echo $eventID; ?>"><?php echo $module->escape( $eventName ); ?></option>
 <?php
 			}
 ?>
-    </select>
-   </td>
-  </tr>
+     </select>
+    </td>
+   </tr>
 <?php
 		}
 ?>
-  <tr>
-   <td><?php echo $module->tt('instance'); ?></td>
-   <td>
-    <select name="instance">
-     <option value=""><?php echo $module->tt('opt_none'); ?></option>
+   <tr>
+    <td><?php echo $module->tt('instance'); ?></td>
+    <td>
+     <select name="instance">
+      <option value=""><?php echo $module->tt('opt_none'); ?></option>
 <?php
 		for ( $i = 1; $i <= $maxInst; $i++ )
 		{
 ?>
-     <option><?php echo $i; ?></option>
+      <option><?php echo $i; ?></option>
 <?php
 		}
 ?>
-    </select>
-   </td>
-  </tr>
-  <tr>
-   <td></td>
-   <td>
-    <input type="hidden" name="action" value="assign">
-    <input type="hidden" name="packs" value="">
-    <input type="submit" value="<?php echo $module->tt('save'); ?>">
-   </td>
-  </tr>
- </table>
-</form>
+     </select>
+    </td>
+   </tr>
+   <tr>
+    <td></td>
+    <td>
+     <input type="hidden" name="action" value="assign">
+     <input type="hidden" name="packs" value="">
+     <button type="submit" class="btn btn-sm btn-primaryrc">
+      <i class="fas fa-save fs14"></i> &nbsp;<span><?php echo $module->tt('save'); ?></span>
+     </button>
+    </td>
+   </tr>
+  </table>
+ </form>
 <?php
 	}
+?>
+</div>
+<?php
 }
 ?>
 
@@ -985,9 +1005,26 @@ $(function()
       $(vSelector).css('display', $(vSelector).css('display') == 'none' ? '' : 'none')
       $(this).find('i').attr('class', 'far fa-eye' + ( $(vSelector).css('display') == 'none'
                                                        ? '-slash' : '' ) )
+      $('.mod-packmgmt-listtable-container .scrollpos').css('height', '1px')
+      $('.mod-packmgmt-listtable-container').trigger('scroll')
     })
   })
   $('[data-tblfilter=".pack-col-assign"]').trigger('click')
+  $('.mod-packmgmt-listtable').css('width','calc(100% - 8px)')
+  $('.mod-packmgmt-listtable-container').css('border-right-width','2px')
+   .prepend('<div style="float:right;width:8px;height:8px;background:#444' +
+            ';border:1px solid #fff;border-radius:4px" class="scrollpos"></div>')
+  $('.mod-packmgmt-listtable-container').on('scroll', function()
+  {
+    var vScrollPos = $('.mod-packmgmt-listtable-container .scrollpos')
+    var vContainer = $('.mod-packmgmt-listtable-container')
+    var vViewHeight = vContainer.height()
+    var vViewPos = vContainer.scrollTop()
+    var vContentHeight = $('.mod-packmgmt-listtable').height()
+    vScrollPos.css('margin-top', (vViewPos + Math.floor(vViewPos*vViewHeight/vContentHeight))+'px')
+    vScrollPos.css('height', Math.ceil(Math.pow(vViewHeight,2)/vContentHeight)+'px')
+  })
+  $('.mod-packmgmt-listtable-container').trigger('scroll')
   $('.mod-packmgmt-listtable').css('opacity','')
   var vLastChecked = 0
   var vMultiCheck = false
@@ -1035,12 +1072,14 @@ $(function()
            $('[data-pack-chkbx]:checked').length > 0 )
       {
         $('.packmgmt-packrcpt .errmsg').css('display','none')
-        $('.packmgmt-packrcpt input, .packmgmt-packrcpt select').prop('disabled',false)
+        $('.packmgmt-packrcpt button, .packmgmt-packrcpt input, .packmgmt-packrcpt select')
+         .prop('disabled',false)
       }
       else
       {
         $('.packmgmt-packrcpt .errmsg').css('display','')
-        $('.packmgmt-packrcpt input, .packmgmt-packrcpt select').prop('disabled',true)
+        $('.packmgmt-packrcpt button, .packmgmt-packrcpt input, .packmgmt-packrcpt select')
+         .prop('disabled',true)
       }
       $('.packmgmt-packrcpt [name="packs"]').val(
           JSON.stringify($('[name="pack_id"]:checked')
@@ -1058,12 +1097,14 @@ $(function()
            $('[data-assigned="true"]:checked').length == 0 )
       {
         $('.packmgmt-packissue .errmsg').css('display','none')
-        $('.packmgmt-packissue input, .packmgmt-packissue select').prop('disabled',false)
+        $('.packmgmt-packissue button, .packmgmt-packissue input, .packmgmt-packissue select')
+         .prop('disabled',false)
       }
       else
       {
         $('.packmgmt-packissue .errmsg').css('display','')
-        $('.packmgmt-packissue input, .packmgmt-packissue select').prop('disabled',true)
+        $('.packmgmt-packissue button, .packmgmt-packissue input, .packmgmt-packissue select')
+         .prop('disabled',true)
       }
       $('.packmgmt-packissue [name="packs"]').val(
           JSON.stringify($('[name="pack_id"]:checked')
@@ -1078,7 +1119,8 @@ $(function()
            $('[data-pack-chkbx]:checked').length > 0 )
       {
         $('.packmgmt-packinvalid .errmsg').css('display','none')
-        $('.packmgmt-packinvalid input, .packmgmt-packinvalid textarea').prop('disabled',false)
+        $('.packmgmt-packinvalid button, .packmgmt-packinvalid input, .packmgmt-packinvalid textarea')
+         .prop('disabled',false)
         if ( $('[data-invalid="true"]:checked').length > 0 )
         {
           $('.packmgmt-packinvalid .desclbl')
@@ -1088,7 +1130,8 @@ $(function()
       else
       {
         $('.packmgmt-packinvalid .errmsg').css('display','')
-        $('.packmgmt-packinvalid input, .packmgmt-packinvalid textarea').prop('disabled',true)
+        $('.packmgmt-packinvalid button, .packmgmt-packinvalid input, .packmgmt-packinvalid textarea')
+         .prop('disabled',true)
       }
       $('.packmgmt-packinvalid [name="packs"]').val(
           JSON.stringify($('[name="pack_id"]:checked')
@@ -1096,7 +1139,9 @@ $(function()
     }
     if ( $('.packmgmt-packassign').length > 0 )
     {
-      $('.packmgmt-packassign input[type="submit"]').val("<?php echo $module->tt('save'); ?>")
+      $('.packmgmt-packassign button[type="submit"] span').text("<?php echo $module->tt('save'); ?>")
+      $('.packmgmt-packassign button[type="submit"] i')
+       .removeClass('fa-arrows-rotate').addClass('fa-save')
       $('.packmgmt-packassign select').val('')
       if ( ( $('[data-pack-chkbx]:checked').length == 1 ||
              ( $('[data-pack-chkbx]:checked').length == 2 &&
@@ -1104,17 +1149,22 @@ $(function()
            $('[data-invalid="true"]:checked').length == 0 )
       {
         $('.packmgmt-packassign .errmsg').css('display','none')
-        $('.packmgmt-packassign input, .packmgmt-packassign select').prop('disabled',false)
+        $('.packmgmt-packassign button, .packmgmt-packassign input, .packmgmt-packassign select')
+         .prop('disabled',false)
         if ( $('[data-pack-chkbx]:checked').length == 2 )
         {
-          $('.packmgmt-packassign input[type="submit"]').val("<?php echo $module->tt('exchange'); ?>")
+          $('.packmgmt-packassign button[type="submit"] span')
+           .text("<?php echo $module->tt('exchange'); ?>")
+          $('.packmgmt-packassign button[type="submit"] i')
+           .removeClass('fa-save').addClass('fa-arrows-rotate')
           $('.packmgmt-packassign select').prop('disabled',true)
         }
       }
       else
       {
         $('.packmgmt-packassign .errmsg').css('display','')
-        $('.packmgmt-packassign input, .packmgmt-packassign select').prop('disabled',true)
+        $('.packmgmt-packassign button, .packmgmt-packassign input, .packmgmt-packassign select')
+         .prop('disabled',true)
       }
       $('.packmgmt-packassign [name="packs"]').val(
           JSON.stringify($('[name="pack_id"]:checked')
@@ -1132,7 +1182,7 @@ $(function()
         return
       }
       event.preventDefault()
-      var vDialogBtn = $('.packmgmt-packassign input[type="submit"]').val()
+      var vDialogBtn = $('.packmgmt-packassign button[type="submit"] span').text()
       var vDialogMsg = ( vDialogBtn == "<?php echo $module->tt('save'); ?>" )
                        ? "<?php echo $module->tt('assign_reassign_packs_confirm_save'); ?>"
                        : "<?php echo $module->tt('assign_reassign_packs_confirm_exchange'); ?>"
@@ -1143,6 +1193,11 @@ $(function()
                     function(){ vPackAssignSubmit = true; $('.packmgmt-packassign').trigger('submit') },
                     vDialogBtn )
     })
+  }
+  $('.packmgmt-submitset').accordion({active:false,collapsible:true,heightStyle:'content'})
+  if ( $('.packmgmt-submitset > div').length == 1 )
+  {
+    $('.packmgmt-submitset').accordion('option', 'collapsible', false)
   }
 })
 </script>
