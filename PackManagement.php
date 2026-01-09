@@ -399,6 +399,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			return;
 		}
 		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS id, ' .
+		                          'JSON_CONTAINS(`value`,\'true\',\'$.new_event\') AS new_event, ' .
 		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.logic\')) AS logic, ' .
 		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) ' .
 		                          'AS packfield, JSON_UNQUOTE(JSON_EXTRACT(`value`,' .
@@ -426,10 +427,34 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			$projectID = $infoCat['project_id'];
 			$_GET['pid'] = $projectID;
 			$GLOBALS['Proj'] = new \Project( $projectID );
+			// Get list of events which contain the pack ID field.
+			$queryPackEvents =
+				$this->query( 'SELECT ef.event_id FROM redcap_metadata m JOIN redcap_events_forms' .
+				              ' ef ON m.form_name = ef.form_name WHERE m.project_id = ? AND ' .
+				              'm.field_name = ? AND ef.event_id IN ( SELECT event_id FROM ' .
+				              'redcap_events_metadata em JOIN redcap_events_arms ea ON ' .
+				              'em.arm_id = ea.arm_id WHERE ea.project_id = ?)',
+				              [ $projectID, $infoCat['packfield'], $projectID ] );
+			$listPackEvents = [];
+			while ( $infoPackEvent = $queryPackEvents->fetch_assoc() )
+			{
+				$listPackEvents[] = intval( $infoPackEvent['event_id'] );
+			}
 			// Get list of records/events/instances which contain data.
+			$queryRecords = $this->getDataTable( $projectID );
+			if ( $infoCat['new_event'] == '1' )
+			{
+				// If the option to include empty events is selected, amend the query to ensure
+				// every event is included for each record.
+				$queryRecords = '( SELECT * FROM ' . $queryRecords . ' UNION SELECT ' .
+				                intval( $projectID ) . ', b.*, a.*, \'\', \'\', 1 FROM ' .
+				                '(SELECT DISTINCT record FROM ' . $queryRecords . ' WHERE ' .
+				                'project_id = ' . intval( $projectID ) . ') a JOIN (SELECT ' .
+				                implode( ' UNION SELECT ', $listPackEvents ) . ') b ) d';
+			}
 			$queryRecords =
 				$this->query( 'SELECT record, event_id, max(ifnull(instance,1)) max_instance ' .
-				              'FROM ' . $this->getDataTable( $projectID ) . ' ' .
+				              'FROM ' . $queryRecords . ' ' .
 				              'WHERE project_id = ? GROUP BY record, event_id',
 				              [ $projectID ] );
 			$listRptForm = [];
@@ -439,6 +464,11 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 				$recordID = $infoRecord['record'];
 				$eventID = $infoRecord['event_id'];
 				$maxInstance = $infoRecord['max_instance'];
+				if ( ! in_array( $eventID, $listPackEvents ) )
+				{
+					// Skip events which do not contain the pack ID field.
+					continue;
+				}
 				// Get repeating instance form name if applicable.
 				if ( ! array_key_exists( $eventID, $listRptForm ) )
 				{

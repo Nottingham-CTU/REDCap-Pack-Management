@@ -21,8 +21,9 @@ if ( $new )
 		header( 'Location: ' . $module->getUrl( 'configure.php' ) );
 		exit;
 	}
-	$infoCategory = [ 'id' => $_POST['cat_id'] ?? '', 'enabled' => true, 'trigger' => '',
-	                  'form' => '', 'logic' => '', 'nominim' => '', 'sel_label' => '',
+	$infoCategory = [ 'id' => $_POST['cat_id'] ?? '', 'enabled' => true,
+	                  'trigger' => '', 'new_event' => false, 'form' => '',
+	                  'logic' => '', 'nominim' => '', 'sel_label' => '',
 	                  'dags' => false, 'dags_rcpt' => false, 'blocks' => false, 'expire' => true,
 	                  'expire_buf' => 0, 'packfield' => '', 'datefield' => '', 'countfield' => '',
 	                  'expirefield' => '', 'valuefield' => '', 'extrafields' => [],
@@ -113,12 +114,13 @@ else
 	{
 		// Build the category object from the form submission, begin with the standard options.
 		$infoCategory = [ 'id' => $_GET['cat_id'] ];
-		foreach ( [ 'enabled', 'trigger', 'form', 'logic', 'nominim', 'sel_label', 'dags',
-		            'dags_rcpt', 'blocks', 'expire', 'expire_buf', 'packfield', 'datefield',
+		foreach ( [ 'enabled', 'trigger', 'new_event', 'form', 'logic', 'nominim', 'sel_label',
+		            'dags', 'dags_rcpt', 'blocks', 'expire', 'expire_buf', 'packfield', 'datefield',
 		            'countfield', 'expirefield', 'valuefield' ]
 		          as $fieldName )
 		{
-			if ( in_array( $fieldName, [ 'enabled', 'dags', 'dags_rcpt', 'blocks', 'expire' ] ) )
+			if ( in_array( $fieldName, [ 'enabled', 'new_event', 'dags', 'dags_rcpt',
+			                             'blocks', 'expire' ] ) )
 			{
 				$infoCategory[ $fieldName ] = ( $_POST[ $fieldName ] == '1' );
 			}
@@ -196,7 +198,7 @@ else
 		$module->dbGetLock();
 		// Check that there is not another minimization pack category with the same rando field
 		// already enabled for this project. Multiple non-enabled minimization pack categories can
-		// co-exist but only onecan be enabled at any time for a given rando field.
+		// co-exist but only one can be enabled at any time for a given rando field.
 		if ( $infoCategory['enabled'] && $infoCategory['trigger'] == 'M' &&
 		     $module->query( 'SELECT 1 FROM redcap_external_module_settings ems JOIN ' .
 		                     'redcap_external_modules em ON ems.external_module_id = ' .
@@ -290,6 +292,17 @@ foreach ( [ 'A' => 'trigger_auto', 'F' => 'trigger_form', 'M' => 'trigger_minim'
 <?php
 }
 ?>
+     </select>
+    </td>
+   </tr>
+   <tr data-trigger-auto="1">
+    <td><?php echo $module->tt('new_event'); ?>*</td>
+    <td>
+     <select name="new_event" required>
+      <option value="1"<?php echo $infoCategory['new_event'] ? ' selected' : ''; ?>><?php
+                                                    echo $module->tt('opt_yes'); ?></option>
+      <option value="0"<?php echo ! $infoCategory['new_event'] ? ' selected' : ''; ?>><?php
+                                                    echo $module->tt('opt_no'); ?></option>
      </select>
     </td>
    </tr>
@@ -525,21 +538,20 @@ foreach ( $module->getPackFieldTypes() as $typeCode => $typeLabel )
     <td><span class="field-desc"><?php echo $module->tt('roles_setting_note'); ?></span></td>
    </tr>
   </tbody>
-  <tbody>
-   <tr><td colspan="2">&nbsp;</td></tr>
-   <tr>
-    <td></td>
-    <td>
-     <input type="submit" value="<?php echo $module->tt('save'); ?>">
-    </td>
-   </tr>
-  </tbody>
  </table>
+ <p>&nbsp;</p>
+ <p style="display:flex;justify-content:space-evenly;max-width:97%">
+  <button type="submit" class="btn btn-sm btn-primaryrc">
+   <i class="fas fa-save fs14"></i> &nbsp;<?php echo $module->tt('save'), "\n"; ?>
+  </button>
+  <span style="width:110px"></span>
+ </p>
 </form>
 <?php
 if ( $canDelete )
 {
 ?>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <form method="post">
