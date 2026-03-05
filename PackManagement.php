@@ -454,9 +454,10 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			}
 			$queryRecords =
 				$this->query( 'SELECT record, event_id, max(ifnull(instance,1)) max_instance ' .
-				              'FROM ' . $queryRecords . ' ' .
-				              'WHERE project_id = ? GROUP BY record, event_id',
-				              [ $projectID ] );
+				              'FROM ' . $queryRecords . ' WHERE project_id = ? ' .
+				              'AND record NOT IN ( SELECT record FROM redcap_locking_records ' .
+				              'WHERE project_id = ? ) GROUP BY record, event_id',
+				              [ $projectID, $projectID ] );
 			$listRptForm = [];
 			// For each record/event.
 			while ( $infoRecord = $queryRecords->fetch_assoc() )
@@ -491,10 +492,17 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 				for ( $instanceNum = 1; $instanceNum <= $maxInstance; $instanceNum++ )
 				{
 					$this->dbGetLock();
-					// Check that the pack field on the record/event/instance is empty and that the
-					// logic (if specified) evaluates as true.
+					// Check that the pack field on the record/event/instance is empty, that the
+					// pack field is not locked and that the logic (if specified) evaluates as true.
 					if ( ! ( $this->getValues( $projectID, $recordID, $eventID, $instanceNum,
 					                       $infoCat['packfield'] )[ $infoCat['packfield'] ] == '' &&
+					         ! $this->query( 'SELECT 1 FROM redcap_locking_data ' .
+					                         'WHERE project_id = ? AND form_name = (SELECT ' .
+					                         'form_name FROM redcap_metadata WHERE project_id = ?' .
+					                         ' AND field_name = ? LIMIT 1) AND record = ? ' .
+					                         'AND event_id = ? AND instance = ?',
+					                         [ $projectID, $projectID, $infoCat['packfield'],
+					                         $recordID, $eventID, $instanceNum ] )->fetch_assoc() &&
 					         ( $infoCat['logic'] == '' ||
 					           \REDCap::evaluateLogic( $infoCat['logic'], $projectID, $recordID,
 					                                   $eventID, $instanceNum, $rptForm ) ) ) )
@@ -513,8 +521,20 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 					// Save the data to the record.
 					if ( $infoData !== false )
 					{
-						$this->updateValues( $projectID, $recordID, $eventID,
-						                     $instanceNum, $infoData );
+						$success = $this->updateValues( $projectID, $recordID, $eventID,
+						                                $instanceNum, $infoData );
+						if ( ! $success &&
+						     $this->getValues( $projectID, $recordID, $eventID, $instanceNum,
+						                    $infoCat['packfield'] )[ $infoCat['packfield'] ] == '' )
+						{
+							// The assignment failed, so reset the pack to unassigned.
+							$module->updatePackProperty( $module->getProjectId(), $infoCat['id'],
+							                             $infoData[ $infoCat['packfield'] ],
+							                             'assigned', false );
+							$module->updatePackLog( $module->getProjectId(), $infoCat['id'],
+							                        'PACK_UNASSIGN',
+							                       [ 'id' => $infoData[ $infoCat['packfield'] ] ] );
+						}
 					}
 					$this->dbReleaseLock();
 				}
