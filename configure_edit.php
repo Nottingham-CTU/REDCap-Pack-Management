@@ -27,8 +27,10 @@ if ( $new )
 	                  'dags' => false, 'dags_rcpt' => false, 'blocks' => false, 'expire' => true,
 	                  'expire_buf' => 0, 'packfield' => '', 'datefield' => '', 'countfield' => '',
 	                  'expirefield' => '', 'valuefield' => '', 'extrafields' => [],
-	                  'psendfield' => '', 'prcptfield' => '', 'preturnfield' => '',
-	                  'ptrnssave_ri' => false,
+	                  'action_typefield' => '', 'action_listfield' => '', 'action_infofield' => '',
+	                  'action_ri' => false, 'fop' => false, 'fop_form' => '', 'fop_logic' => '',
+	                  'fop_packfield' => '', 'fop_datefield' => '', 'fop_countfield' => '',
+	                  'fop_expirefield' => '', 'fop_base_event' => '', 'fop_base_instance' => '',
 	                  'roles_view' => [], 'roles_dags' => [], 'roles_invalid' => [],
 	                  'roles_assign' => [], 'roles_add' => [], 'roles_edit' => [] ];
 }
@@ -158,10 +160,12 @@ else
 		{
 			$infoCategory['extrafields'] = new \stdClass;
 		}
-		// Add the pack send/received/returned fields.
-		foreach ( [ 'psendfield', 'prcptfield', 'preturnfield', 'ptrnssave_ri' ] as $fieldName )
+		// Add the packs action fields and follow-on packs fields.
+		foreach ( [ 'action_typefield', 'action_listfield', 'action_infofield', 'action_ri', 'fop',
+		            'fop_form', 'fop_logic', 'fop_packfield', 'fop_datefield', 'fop_countfield',
+		            'fop_expirefield', 'fop_base_event', 'fop_base_instance' ] as $fieldName )
 		{
-			if ( $fieldName == 'ptrnssave_ri' )
+			if ( $fieldName == 'action_ri' || $fieldName == 'fop' )
 			{
 				$infoCategory[ $fieldName ] = ( ( $_POST[ $fieldName ] ?? '' ) == '1' );
 			}
