@@ -109,6 +109,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 	public function redcap_every_page_before_render()
 	{
 		// Provide pack management settings to the REDCap UI Tweaker simplified view.
+		// Note: This is deprecated in favour of the Project Documentation module.
 		if ( $this->isModuleEnabled('redcap_ui_tweaker') )
 		{
 			$UITweaker = \ExternalModules\ExternalModules::getModuleInstance('redcap_ui_tweaker');
@@ -1046,6 +1047,107 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 	public function getModuleDirectoryBaseName()
 	{
 		return preg_replace( '/_v[0-9.]+$/', '', $this->getModuleDirectoryName() );
+	}
+
+
+
+	// Get the module documentation data for the Project Documentation module.
+	function getModuleDocumentationData( $projectID )
+	{
+		$listYN = [ true => 'opt_yes', false => 'opt_no' ];
+		$queryCat = $this->query( 'SELECT ems.`value` AS category ' .
+		                          'FROM redcap_external_module_settings ems JOIN ' .
+		                          'redcap_external_modules em ON ems.external_module_id = ' .
+		                          'em.external_module_id WHERE em.directory_prefix = ? ' .
+		                          'AND ems.`key` LIKE ? ORDER BY ems.`key`',
+		                          [ $this->getModuleDirectoryBaseName(),
+		                            'p' . $projectID . '-packcat-%' ] );
+		$listSettings = [];
+		while ( $infoCat = $queryCat->fetch_assoc() )
+		{
+			$infoCat = json_decode( $infoCat['category'], true );
+			$catID = $infoCat['id'];
+			unset( $infoCat['id'] );
+			$catData = '<b>' . $module->tt('enabled') . ':</b> ' .
+			           $module->tt( $listYN[ $infoCat['enabled'] ] );
+			unset( $infoCat['enabled'] );
+			// Basic pack category parameters.
+			foreach ( [ 'trigger' => [ 'trigger_label', [ 'A' => 'trigger_auto',
+			                                              'F' => 'trigger_form',
+			                                              'M' => 'trigger_minim',
+			                                              'S' => 'trigger_select' ] ],
+			            'new_event' => 'new_event',
+			            'form' => 'form',
+			            'logic' => 'trig_logic',
+			            'nominim' => [ 'no_pack_for_minim', [ 'S' => 'no_pack_for_minim_skip',
+			                                                  'P' => 'no_pack_for_minim_stop' ] ],
+			            'sel_label' => 'selection_label',
+			            'dags' => 'packs_issue_dags',
+			            'dags_rcpt' => 'packs_issue_dags_rcpt',
+			            'blocks' => 'packs_group_blocks',
+			            'expire' => 'packs_have_expiry',
+			            'expire_buf' => 'packs_expiry_buf',
+			            'packfield' => 'pack_id_proj_field',
+			            'datefield' => 'pack_date_proj_field',
+			            'countfield' => 'pack_count_proj_field',
+			            'expirefield' => 'pack_expire_proj_field',
+			            'valuefield' => 'pack_value_proj_field' ]
+			          as $key => $desc )
+			{
+				if ( is_array( $desc ) )
+				{
+					$listOptions = $desc[1];
+					$desc = $desc[0];
+				}
+				$catData .= '<br><b>' . $module->tt( $desc ) . ':</b> ';
+				$catData .= is_bool( $infoCat[ $key ] )
+				            ? $module->tt( $listYN[ $infoCat[ $key ] ] )
+				            : $module->escape( $infoCat[ $key ] );
+				unset( $infoCat[ $key ] );
+			}
+			// Extra pack fields.
+			if ( ! empty( $infoCat['extrafields'] ) )
+			{
+				$catData .= '<br><b>' . $this->escape('') . ':</b><ul>';
+				foreach ( $infoCat['extrafields'] as $eFieldName => $eFieldData )
+				{
+					$catData .= '<li><b>' . $this->escape( $eFieldData['label'] ) . '</b> <i>' .
+					            $this->escape( $eFieldName ) . '</i><ul>';
+					foreach ( [ 'type', 'field' ] as $eFieldAttr )
+					{
+						$eFieldAttrDesc = trim( str_replace( '<span>{0}</span>', '',
+						                           $this->tt('pack_extra_field_' . $eFieldAttr) ) );
+						$catData .= '<li><b>' . $eFieldAttrDesc . ':</b> ';
+						$catData .= is_bool( $eFieldData[ $eFieldAttr ] )
+						            ? $module->tt( $listYN[ $eFieldData[ $eFieldAttr ] ] )
+						            : $module->escape( $eFieldData[ $eFieldAttr ] );
+						$catData .= '</li>';
+					}
+					$catData .= '</ul></li>';
+				}
+				$catData .= '</ul>';
+				unset( $infoCat['extrafields'] );
+			}
+			// Roles.
+			$sp = chr(0xC2) . chr(0xA0);
+			foreach ( [ 'view' => 'view_packs', 'dags' => 'issue_packs',
+			            'invalid' => 'mark_packs_invalid', 'assign' => 'assign_packs',
+			            'add' => 'add_packs', 'edit' => 'edit_delete_packs' ]
+			          as $key => $desc )
+			{
+				$catData .= '<br><b>' . $module->tt( 'roles_' . $desc ) . ':</b><br>' . $sp . $sp;
+				$catData .= str_replace( "\n", '<br>' . $sp . $sp,
+				                         $module->escape( $infoCat[ 'roles_' . $key ] ) );
+				unset( $infoCat[ 'roles_' . $key ] );
+			}
+			// Any pack category configuration not already covered.
+			foreach ( $infoCat as $key => $value )
+			{
+				$catData .= '<br><b>' . $this->escape( $key ) . ':</b> ' . $this->escape( $value );
+			}
+			$listSettings[ $catID ] = $catData;
+		}
+		return [ 'extmod' => $listSettings ];
 	}
 
 
