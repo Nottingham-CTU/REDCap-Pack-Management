@@ -495,6 +495,7 @@ foreach ( $module->getPackFieldTypes() as $typeCode => $typeLabel )
     </td>
    </tr>
    <tr><td colspan="2">&nbsp;</td></tr>
+   <tr><th colspan="2"><?php echo $module->tt('pack_category_permissions'); ?></th></tr>
    <tr>
     <td><?php echo $module->tt('roles_view_packs'); ?></td>
     <td>
