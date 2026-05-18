@@ -919,6 +919,11 @@ if ( $canConfigure || ( in_array( $roleName, $infoCategory['roles_view'] ) &&
     </td>
    </tr>
    <tr>
+    <td colspan="2" class="unassignmsg" style="font-size:0.9em;display:none;text-align:left">
+     <?php echo $module->tt('assign_reassign_packs_unassignmsg'), "\n"; ?>
+    </td>
+   </tr>
+   <tr>
     <td><?php echo $module->tt('record'); ?></td>
     <td>
      <select name="record_id">
@@ -1151,6 +1156,9 @@ $(function()
         $('.packmgmt-packassign .errmsg').css('display','none')
         $('.packmgmt-packassign button, .packmgmt-packassign input, .packmgmt-packassign select')
          .prop('disabled',false)
+        $('.packmgmt-packassign .unassignmsg')
+         .css('display', $('[data-pack-chkbx]:checked').length == 1 &&
+                         $('[data-assigned="true"]:checked').length == 1 ? '' : 'none')
         if ( $('[data-pack-chkbx]:checked').length == 2 )
         {
           $('.packmgmt-packassign button[type="submit"] span')
@@ -1163,6 +1171,7 @@ $(function()
       else
       {
         $('.packmgmt-packassign .errmsg').css('display','')
+        $('.packmgmt-packassign .unassignmsg').css('display','none')
         $('.packmgmt-packassign button, .packmgmt-packassign input, .packmgmt-packassign select')
          .prop('disabled',true)
       }
