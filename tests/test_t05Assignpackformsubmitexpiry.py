@@ -80,7 +80,7 @@ class Test_05_Assign_pack_form_submit_expiry:
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=configure_edit\"][href*=\"cat_id=packs5\"]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.NAME, "enabled")))
     self.driver.find_element(By.NAME, "enabled").find_element(By.CSS_SELECTOR, "*[value='0']").click()
-    self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"]").click()
+    self.driver.find_element(By.CSS_SELECTOR, "#catform button.btn-primaryrc").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=visit_lab_data\"]").click()
     self.driver.execute_script("$('#south').remove();dataEntrySubmit('submit-btn-savecontinue')")

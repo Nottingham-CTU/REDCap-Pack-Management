@@ -1931,6 +1931,12 @@
           "value": ""
         },
         {
+          "command": "click",
+          "target": "css=.packmgmt-submitset [role=\"tab\"]:nth-of-type(2)",
+          "value": "",
+          "id": "333de737-9e3e-4190-9628-9600a3b3134e"
+        },
+        {
           "id": "a9c19845-4955-419c-a532-c27f7785c9a1",
           "comment": "",
           "command": "click",
@@ -2097,6 +2103,12 @@
           "target": "$('#south').remove()",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "click",
+          "target": "css=.packmgmt-submitset [role=\"tab\"]:nth-of-type(1)",
+          "value": "",
+          "id": "575edbea-404c-4c84-9edf-7ea0d37bfab5"
         },
         {
           "id": "c379e13b-f948-4321-866b-5895fd39e735",
@@ -2278,7 +2290,7 @@
           "id": "12ca1db3-6743-4ba1-abe8-cbc19a0829e1",
           "comment": "",
           "command": "click",
-          "target": "css=input[type=\"submit\"]",
+          "target": "css=#catform button.btn-primaryrc",
           "targets": [],
           "value": ""
         },
@@ -3690,7 +3702,7 @@
           "id": "fd100550-f8f8-4fb1-aedb-cbfd5562a8d1",
           "comment": "",
           "command": "click",
-          "target": "css=input[type=\"submit\"]",
+          "target": "css=#catform button.btn-primaryrc",
           "targets": [],
           "value": ""
         },
@@ -4288,7 +4300,7 @@
           "id": "e60d82bf-7c5e-4413-83b6-b88f80642b8a",
           "comment": "",
           "command": "click",
-          "target": "css=input[type=\"submit\"]",
+          "target": "css=#catform button.btn-primaryrc",
           "targets": [],
           "value": ""
         },
@@ -4370,14 +4382,6 @@
       "id": "ad2bdaba-5bc5-4a2b-8658-ae42e0fd3395",
       "name": "t06 Assign pack form submit invalid",
       "commands": [
-        {
-          "id": "65884bba-60ed-48aa-82f8-c5e229ab2f57",
-          "comment": "",
-          "command": "//Check that a pack is assigned on form submission only when the pack is not invalid",
-          "target": "",
-          "targets": [],
-          "value": ""
-        },
         {
           "id": "ad918010-8a2a-44c0-a3fb-23a8d5f473c5",
           "comment": "",
@@ -4689,6 +4693,12 @@
           "target": "$('#south').remove()",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "click",
+          "target": "css=.packmgmt-submitset [role=\"tab\"]:nth-of-type(1)",
+          "value": "",
+          "id": "db35cb67-3775-477c-b50c-0f5afca11188"
         },
         {
           "id": "8a80aee1-5f40-44c2-98b6-4805e4a35e68",
@@ -5006,7 +5016,7 @@
           "id": "ab8fb400-1dfb-4956-80fe-24a6fc569364",
           "comment": "",
           "command": "click",
-          "target": "css=input[type=\"submit\"]",
+          "target": "css=#catform button.btn-primaryrc",
           "targets": [],
           "value": ""
         },
@@ -6629,14 +6639,6 @@
       "name": "t09 Assign pack minimization",
       "commands": [
         {
-          "id": "1d2ef9cd-31dc-444a-9217-ea9751ef2713",
-          "comment": "",
-          "command": "//Check that a pack is assigned on request from minimization module",
-          "target": "",
-          "targets": [],
-          "value": ""
-        },
-        {
           "id": "658b4fce-6472-4f46-ad5c-4bc723a7592d",
           "comment": "",
           "command": "open",
@@ -7024,7 +7026,7 @@
           "id": "6b26ab6d-ec6e-43dd-84c3-b8b3ff4c5090",
           "comment": "",
           "command": "click",
-          "target": "css=input[type=\"submit\"]",
+          "target": "css=#catform button.btn-primaryrc",
           "targets": [],
           "value": ""
         },
@@ -7074,14 +7076,6 @@
       "id": "48ca9852-bb97-487a-882e-0fff66df0667",
       "name": "t10 Assign pack automatic",
       "commands": [
-        {
-          "id": "a587f256-c798-4c8a-b01c-f6c458055b29",
-          "comment": "",
-          "command": "//Check that a pack is assigned automatically",
-          "target": "",
-          "targets": [],
-          "value": ""
-        },
         {
           "id": "ce66ca28-4347-4765-b96b-29bba88d932f",
           "comment": "",
@@ -7590,7 +7584,7 @@
           "id": "1f9294b0-4707-4b81-aeee-728f330ce282",
           "comment": "",
           "command": "click",
-          "target": "css=input[type=\"submit\"]",
+          "target": "css=#catform button.btn-primaryrc",
           "targets": [],
           "value": ""
         },
@@ -8028,7 +8022,7 @@
           "id": "d2c040b9-9a1e-4827-aad0-0fe3c5ec775b",
           "comment": "",
           "command": "click",
-          "target": "css=input[type=\"submit\"]",
+          "target": "css=#catform button.btn-primaryrc",
           "targets": [],
           "value": ""
         },
@@ -8118,14 +8112,6 @@
       "id": "55e5f4f1-b1cf-4ef2-9cd8-32fd021c0ef3",
       "name": "t12 Manual reassignment",
       "commands": [
-        {
-          "id": "a52be84a-448e-490a-909f-47dde80b5a18",
-          "comment": "",
-          "command": "// Check that manual assignment, unassignment and reassignment work correctly",
-          "target": "",
-          "targets": [],
-          "value": ""
-        },
         {
           "id": "e81183d1-fb57-42a9-9aed-ceab3f8d07b7",
           "comment": "",
@@ -8559,6 +8545,12 @@
           "value": "30000"
         },
         {
+          "command": "click",
+          "target": "css=.packmgmt-submitset [role=\"tab\"]:nth-of-type(2)",
+          "value": "",
+          "id": "e953fbfa-a542-4bc1-baa3-9c6dd660f1c0"
+        },
+        {
           "id": "bb2fcc2d-f375-4501-95ff-45395b32c1e5",
           "comment": "",
           "command": "runScript",
@@ -8677,6 +8669,12 @@
           "target": "css=.packmgmt-packassign button.btn-primaryrc",
           "targets": [],
           "value": "30000"
+        },
+        {
+          "command": "click",
+          "target": "css=.packmgmt-submitset [role=\"tab\"]:nth-of-type(2)",
+          "value": "",
+          "id": "7a4e2c0b-77d8-4b90-9ab3-310692ddfca4"
         },
         {
           "id": "11813f33-3f74-4420-bd34-cfca0c5d04a4",
@@ -8853,6 +8851,12 @@
           "target": "css=.packmgmt-packassign button.btn-primaryrc",
           "targets": [],
           "value": "30000"
+        },
+        {
+          "command": "click",
+          "target": "css=.packmgmt-submitset [role=\"tab\"]:nth-of-type(2)",
+          "value": "",
+          "id": "70286a79-f322-4318-96c2-f6cd1a1949da"
         },
         {
           "id": "066bd97e-d294-4950-813f-64443b6253a8",
@@ -9101,6 +9105,12 @@
           "target": "css=a[href*=\"page=packs_list\"][href*=\"cat_id=packs12\"]",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "click",
+          "target": "css=.packmgmt-submitset [role=\"tab\"]:nth-of-type(2)",
+          "value": "",
+          "id": "da1d7638-93cc-44fb-8453-414e29cfbaa5"
         },
         {
           "id": "34e8564a-7df9-402b-820b-ce71ccd2ab75",
@@ -9386,7 +9396,7 @@
           "id": "4b1494a9-b259-434b-acf9-50178c49f92b",
           "comment": "",
           "command": "click",
-          "target": "css=input[type=\"submit\"]",
+          "target": "css=#catform button.btn-primaryrc",
           "targets": [],
           "value": ""
         },
@@ -10800,7 +10810,7 @@
           "id": "113bf07c-4da4-44b0-8e87-45fc83d772ee",
           "comment": "",
           "command": "click",
-          "target": "css=input[type=\"submit\"]",
+          "target": "css=#catform button.btn-primaryrc",
           "targets": [],
           "value": ""
         },
@@ -10818,14 +10828,6 @@
       "id": "f1d0ad19-af0e-48b3-b50e-16a7653638ef",
       "name": "t14 Assign pack selection",
       "commands": [
-        {
-          "id": "4af04347-9331-4ee8-90bb-e6eb42690f6e",
-          "comment": "",
-          "command": "//Check that a pack is assigned on selection trigger without DAG issuing",
-          "target": "",
-          "targets": [],
-          "value": ""
-        },
         {
           "id": "3732c9d1-f2b5-45de-ac8e-9d194fc6bc80",
           "comment": "",
@@ -11254,7 +11256,7 @@
           "id": "52ff5b67-334b-4c45-892c-e747cd55324e",
           "comment": "",
           "command": "click",
-          "target": "css=input[type=\"submit\"]",
+          "target": "css=#catform button.btn-primaryrc",
           "targets": [],
           "value": ""
         },
@@ -11721,6 +11723,12 @@
           "value": ""
         },
         {
+          "command": "click",
+          "target": "css=.packmgmt-submitset [role=\"tab\"]:nth-of-type(2)",
+          "value": "",
+          "id": "6875a692-2b5b-4d89-8286-647506736847"
+        },
+        {
           "id": "36d81cdf-bfaa-4d9a-a409-8f35e4f046cc",
           "comment": "",
           "command": "click",
@@ -11855,6 +11863,12 @@
           "target": "$('#south').remove()",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "click",
+          "target": "css=.packmgmt-submitset [role=\"tab\"]:nth-of-type(1)",
+          "value": "",
+          "id": "498726f7-3577-484e-9425-4f01791a4b7e"
         },
         {
           "id": "0d4e8366-f205-441b-83b4-040edc86a15b",
@@ -12092,7 +12106,7 @@
           "id": "2395cfe7-f2ac-484f-b407-eccdf37d4464",
           "comment": "",
           "command": "click",
-          "target": "css=input[type=\"submit\"]",
+          "target": "css=#catform button.btn-primaryrc",
           "targets": [],
           "value": ""
         },

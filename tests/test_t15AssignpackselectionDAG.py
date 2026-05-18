@@ -64,6 +64,7 @@ class Test_15_Assign_pack_selection_DAG:
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=packs\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=packs_list\"][href*=\"cat_id=packs15\"]").click()
     self.driver.execute_script("$('#south').remove()")
+    self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-submitset [role=\"tab\"]:nth-of-type(2)").click()
     self.driver.find_element(By.CSS_SELECTOR, "input[name=\"pack_id\"][value=\"1\"]").click()
     assert len(self.driver.find_elements(By.CSS_SELECTOR, ".packmgmt-packissue button.btn-primaryrc:not([disabled])")) == 0
     self.driver.find_element(By.CSS_SELECTOR, "input[name=\"pack_id\"][value=\"2\"]").click()
@@ -81,6 +82,7 @@ class Test_15_Assign_pack_selection_DAG:
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=packs\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=packs_list\"][href*=\"cat_id=packs15\"]").click()
     self.driver.execute_script("$('#south').remove()")
+    self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-submitset [role=\"tab\"]:nth-of-type(1)").click()
     self.driver.find_element(By.CSS_SELECTOR, "input[name=\"pack_id\"][value=\"1\"]").click()
     assert len(self.driver.find_elements(By.CSS_SELECTOR, ".packmgmt-packrcpt button.btn-primaryrc:not([disabled])")) == 0
     self.driver.find_element(By.CSS_SELECTOR, "input[name=\"pack_id\"][value=\"2\"]").click()
@@ -110,7 +112,7 @@ class Test_15_Assign_pack_selection_DAG:
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.execute_script("$('#south').remove()")
     self.driver.find_element(By.NAME, "enabled").find_element(By.CSS_SELECTOR, "*[value='0']").click()
-    self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"]").click()
+    self.driver.find_element(By.CSS_SELECTOR, "#catform button.btn-primaryrc").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=visit_lab_data\"]").click()

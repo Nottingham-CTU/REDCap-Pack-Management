@@ -57,6 +57,7 @@ class Test_06_Assign_pack_form_submit_invalid:
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=packs\"]:not([href*=\"logout=1\"])").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=packs_list\"][href*=\"cat_id=packs6\"]").click()
     self.driver.execute_script("$('#south').remove()")
+    self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-submitset [role=\"tab\"]:nth-of-type(1)").click()
     self.driver.find_element(By.CSS_SELECTOR, "input[name=\"pack_id\"][value=\"1\"]").click()
     assert len(self.driver.find_elements(By.CSS_SELECTOR, ".packmgmt-packinvalid button.btn-primaryrc:not([disabled])")) > 0
     self.driver.find_element(By.NAME, "invalid_desc").send_keys("Example")
@@ -96,7 +97,7 @@ class Test_06_Assign_pack_form_submit_invalid:
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=configure_edit\"][href*=\"cat_id=packs6\"]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.NAME, "enabled")))
     self.driver.find_element(By.NAME, "enabled").find_element(By.CSS_SELECTOR, "*[value='0']").click()
-    self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"]").click()
+    self.driver.find_element(By.CSS_SELECTOR, "#catform button.btn-primaryrc").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=visit_lab_data\"]").click()
     self.driver.execute_script("$('#south').remove();dataEntrySubmit('submit-btn-savecontinue')")

@@ -66,7 +66,7 @@ class Test_09_Assign_pack_minimization:
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=configure_edit\"][href*=\"cat_id=packs9\"]").click()
     self.driver.execute_script("$('#south').remove()")
     self.driver.find_element(By.NAME, "nominim").find_element(By.CSS_SELECTOR, "*[value='P']").click()
-    self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"]").click()
+    self.driver.find_element(By.CSS_SELECTOR, "#catform button.btn-primaryrc").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.execute_script("$.get(window.location.href+'&runtest=assignMinimPack&record_id=1&list_minim_codes=%5B%22A%22%2C%22B%22%5D&minim_field=',function(data){$('body').attr('data-result',data)})")
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "body[data-result]")))

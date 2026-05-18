@@ -72,6 +72,7 @@ class Test_12_Manual_reassignment:
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=packs\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=packs_list\"][href*=\"cat_id=packs12\"]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, ".packmgmt-packassign button.btn-primaryrc")))
+    self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-submitset [role=\"tab\"]:nth-of-type(2)").click()
     self.driver.execute_script("$('input[type=\"checkbox\"][value=\"'+sessionStorage.getItem('test-pack1-id')+'\"]').attr('data-test-assigned-pack','1')")
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[type=\"checkbox\"][data-test-assigned-pack][data-assigned=\"true\"]")) > 0
     None if (element := self.driver.find_element(By.CSS_SELECTOR, "input[type=\"checkbox\"][data-test-assigned-pack]")).is_selected() else element.click()
@@ -87,6 +88,7 @@ class Test_12_Manual_reassignment:
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=packs\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=packs_list\"][href*=\"cat_id=packs12\"]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, ".packmgmt-packassign button.btn-primaryrc")))
+    self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-submitset [role=\"tab\"]:nth-of-type(2)").click()
     self.driver.execute_script("$('input[type=\"checkbox\"][value=\"'+sessionStorage.getItem('test-pack1-id')+'\"]').attr('data-test-assigned-pack','1')")
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[type=\"checkbox\"][data-test-assigned-pack][data-assigned=\"false\"]")) > 0
     None if (element := self.driver.find_element(By.CSS_SELECTOR, "input[type=\"checkbox\"][data-test-assigned-pack]")).is_selected() else element.click()
@@ -109,6 +111,7 @@ class Test_12_Manual_reassignment:
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=packs\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=packs_list\"][href*=\"cat_id=packs12\"]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, ".packmgmt-packassign button.btn-primaryrc")))
+    self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-submitset [role=\"tab\"]:nth-of-type(2)").click()
     self.driver.execute_script("$('input[type=\"checkbox\"][value=\"'+sessionStorage.getItem('test-pack1-id')+'\"]').attr('data-test-assigned-pack','1')")
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[type=\"checkbox\"][data-test-assigned-pack][data-assigned=\"true\"]")) > 0
     self.driver.execute_script("$('input[type=\"checkbox\"][data-pack-chkbx]').trigger('click')")
@@ -140,6 +143,7 @@ class Test_12_Manual_reassignment:
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[data-test-assigned-pack-extra]")) > 0
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=packs\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=packs_list\"][href*=\"cat_id=packs12\"]").click()
+    self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-submitset [role=\"tab\"]:nth-of-type(2)").click()
     self.driver.execute_script("$('input[type=\"checkbox\"][data-pack-chkbx]').trigger('click')")
     self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-packassign button.btn-primaryrc").click()
     self.driver.find_element(By.CSS_SELECTOR, ".ui-dialog button.ok-button").click()
@@ -175,7 +179,7 @@ class Test_12_Manual_reassignment:
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.NAME, "enabled")))
     self.driver.find_element(By.NAME, "enabled").find_element(By.CSS_SELECTOR, "*[value='0']").click()
     self.driver.execute_script("$('#south').remove()")
-    self.driver.find_element(By.CSS_SELECTOR, "input[type=\"submit\"]").click()
+    self.driver.find_element(By.CSS_SELECTOR, "#catform button.btn-primaryrc").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"UserRights/index.php\"]").click()
     self.driver.find_element(By.ID, "new_username_assign").send_keys("user")
