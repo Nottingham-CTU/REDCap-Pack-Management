@@ -7464,7 +7464,7 @@
           "id": "1d61a697-ea19-4a31-9a20-109152013052",
           "comment": "",
           "command": "click",
-          "target": "css=input[type=\"submit\"]",
+          "target": "css=#catform button.btn-primaryrc",
           "targets": [],
           "value": ""
         },
