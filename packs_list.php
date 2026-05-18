@@ -247,33 +247,30 @@ if ( isset( $_POST['action'] ) )
 			exit;
 		}
 		$listChosen = json_decode( $_POST['packs'], true );
-		if ( $infoCategory['blocks'] )
+		$listValidPacks = [];
+		$listInvalidPacks = [];
+		foreach ( $listPacks as $infoPack )
 		{
-			$listValidPacks = [];
-			$listInvalidPacks = [];
-			foreach ( $listPacks as $infoPack )
+			if ( in_array( $infoPack['id'], $listChosen ) )
 			{
-				if ( in_array( $infoPack['id'], $listChosen ) )
+				if ( $infoPack['assigned'] )
 				{
-					if ( $infoPack['assigned'] )
-					{
-						$listErrors[] = [ 'mark_unmark_packs_invalid_error' ];
-						break;
-					}
-					if ( $infoPack['invalid'] )
-					{
-						$listInvalidPacks[ $infoPack['block_id'] ] = true;
-					}
-					else
-					{
-						$listValidPacks[ $infoPack['block_id'] ] = true;
-					}
+					$listErrors[] = [ 'mark_unmark_packs_invalid_error' ];
+					break;
+				}
+				if ( $infoPack['invalid'] )
+				{
+					$listInvalidPacks[ $infoPack['id'] ] = true;
+				}
+				else
+				{
+					$listValidPacks[ $infoPack['id'] ] = true;
 				}
 			}
-			if ( ! empty( $listValidPacks ) && ! empty( $listInvalidPacks ) )
-			{
-				$listErrors[] = [ 'mark_unmark_packs_invalid_error' ];
-			}
+		}
+		if ( ! empty( $listValidPacks ) && ! empty( $listInvalidPacks ) )
+		{
+			$listErrors[] = [ 'mark_unmark_packs_invalid_error' ];
 		}
 		if ( empty( $listErrors ) )
 		{
