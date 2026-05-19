@@ -62,7 +62,9 @@ class Test_13_Edit_and_delete_packs:
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=packs_edit\"][href*=\"pack_id=2\"]").click()
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[name=\"f_test\"][value=\"22\"]")) > 0
     self.driver.execute_script("$('input[name=\"f_test\"]').val('1234')")
+    self.driver.execute_script("$('#south').remove()")
     self.driver.find_element(By.CSS_SELECTOR, ".mod-packmgmt-formtable input[type=\"submit\"]").click()
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     assert len(self.driver.find_elements(By.CSS_SELECTOR, ".mod-packmgmt-okmsg")) > 0
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[name=\"f_test\"][value=\"1234\"]")) > 0
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=packs_list\"][href*=\"cat_id=packs13\"]").click()

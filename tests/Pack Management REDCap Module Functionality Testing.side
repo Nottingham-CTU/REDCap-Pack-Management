@@ -2693,12 +2693,24 @@
           "value": "1"
         },
         {
+          "command": "runScript",
+          "target": "$('#south').remove()",
+          "value": "",
+          "id": "c3b9fb20-d4a3-4054-a22e-04a31b19a6a8"
+        },
+        {
           "id": "bbaf018d-bc1b-40c2-a091-9124ef4ca3f0",
           "comment": "",
           "command": "click",
           "target": "css=div[id=\"singlepack\"] input[type=\"submit\"]",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "5c406b84-0ef9-42c7-8059-02df41fbea09"
         },
         {
           "id": "a1bdf7da-6458-4d67-935a-47a0fcd13efb",
@@ -8457,6 +8469,18 @@
           "value": ""
         },
         {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "026d1abd-9b84-4d18-bfdc-1197e3faf09c"
+        },
+        {
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "id": "2b23d9da-61f4-4016-99b1-908095cf7efc"
+        },
+        {
           "id": "67856375-5839-4837-a1e4-3163d35f6929",
           "comment": "",
           "command": "runScript",
@@ -8613,6 +8637,18 @@
           "target": "css=a[href*=\"page=visit_lab_data\"]",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "f6516d82-ffd8-412c-86d2-7721ea1c5921"
+        },
+        {
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "id": "15c5df44-79fa-4202-8ba1-01e43a2b2160"
         },
         {
           "id": "11b11bad-6d04-4128-984a-e3c634154e77",
@@ -10191,12 +10227,24 @@
           "value": ""
         },
         {
+          "command": "runScript",
+          "target": "$('#south').remove()",
+          "value": "",
+          "id": "63e27082-d4b7-4118-b72e-5422b5691214"
+        },
+        {
           "id": "e1998f7e-0731-4f4d-b5db-639cce78bd35",
           "comment": "",
           "command": "click",
           "target": "css=.mod-packmgmt-formtable input[type=\"submit\"]",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "738a56df-f7b5-4f7e-b4f5-22367bd7d122"
         },
         {
           "id": "fa1ecd3c-cde7-4f0e-a7ae-5edf5845630d",
@@ -11125,6 +11173,18 @@
           "value": ""
         },
         {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "7e0e1ed0-8ee2-4b21-a190-42d8568ee790"
+        },
+        {
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "id": "11b419dd-e596-4439-bd49-56a2def21bcd"
+        },
+        {
           "id": "ae490c1e-fa89-42f7-b42c-211716698830",
           "comment": "",
           "command": "runScript",
@@ -11283,6 +11343,18 @@
           "target": "css=a[href*=\"page=visit_lab_data\"]",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "19cc8390-a120-4a74-abc1-9e551aae0353"
+        },
+        {
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "id": "fd52b3bb-717a-4629-b55c-2df50e73f2e1"
         },
         {
           "id": "92a7c265-96c4-4ffc-b399-b4b2a4c2fd90",
@@ -11667,6 +11739,18 @@
           "value": ""
         },
         {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "28784abd-99c8-4f1e-9d8f-4f973bc6a76f"
+        },
+        {
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "id": "b4456245-ec57-4814-89fd-155ccf142e8a"
+        },
+        {
           "id": "9f1242f5-bf1f-4016-bff1-1cbd84b94376",
           "comment": "",
           "command": "runScript",
@@ -11807,6 +11891,18 @@
           "target": "css=a[href*=\"page=visit_lab_data\"]",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "c8e61466-73d6-4120-b261-c2e16a03942b"
+        },
+        {
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "id": "6781159f-9f2f-4eb7-91dd-38277979b871"
         },
         {
           "id": "93ba4b91-43f2-4c8d-ba7b-a240175bbce9",

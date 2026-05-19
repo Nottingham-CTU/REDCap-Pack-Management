@@ -57,6 +57,8 @@ class Test_15_Assign_pack_selection_DAG:
     self.driver.execute_script("fd=new FormData($('form[enctype=\"multipart/form-data\"]')[0]);fd.set('packs_upload',new Blob([decodeURIComponent('id,block_id%0A1,1%0A2,1%0A3,2%0A4,2')]));fetch( window.location.href, {body:fd, method:'post'})")
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=visit_lab_data\"]").click()
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
+    time.sleep(0.5)
     self.driver.execute_script("$('[name=\"pack_id\"]').attr('data-optcount',''+$('[name=\"pack_id\"] option').length)")
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "select[name=\"pack_id\"][data-optcount=\"1\"]")) > 0
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[name=\"pack_count\"][value=\"\"]")) > 0
@@ -75,6 +77,8 @@ class Test_15_Assign_pack_selection_DAG:
     assert len(self.driver.find_elements(By.CSS_SELECTOR, ".mod-packmgmt-okmsg")) > 0
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=visit_lab_data\"]").click()
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
+    time.sleep(0.5)
     self.driver.execute_script("$('[name=\"pack_id\"]').attr('data-optcount',''+$('[name=\"pack_id\"] option').length)")
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "select[name=\"pack_id\"][data-optcount=\"1\"]")) > 0
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[name=\"pack_count\"][value=\"\"]")) > 0
