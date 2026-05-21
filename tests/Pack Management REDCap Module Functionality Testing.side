@@ -8615,12 +8615,24 @@
           "value": ""
         },
         {
+          "command": "runScript",
+          "target": "$('#south').remove()",
+          "value": "",
+          "id": "a8115c3e-9971-43d6-b750-b048b138a059"
+        },
+        {
           "id": "23cad4fd-623d-499d-b320-6ce353c25bfe",
           "comment": "",
           "command": "click",
           "target": "css=.ui-dialog button.ok-button",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "c8dc35bf-609f-44b1-a2f8-363d5071ddd0"
         },
         {
           "id": "5ca09a30-8e4d-46d9-af34-0cf8f6776c3f",
@@ -8777,12 +8789,24 @@
           "value": ""
         },
         {
+          "command": "runScript",
+          "target": "$('#south').remove()",
+          "value": "",
+          "id": "19e3ae4f-c9b5-4855-aefe-aed5c0a45ebc"
+        },
+        {
           "id": "bcdd5461-2e27-450c-bb3e-3d6c533609b9",
           "comment": "",
           "command": "click",
           "target": "css=.ui-dialog button.ok-button",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "faaa4848-4d61-4377-a777-6f79dc92330c"
         },
         {
           "id": "3ce026db-52ad-4332-8add-2c97f074ee09",
@@ -8927,12 +8951,24 @@
           "value": ""
         },
         {
+          "command": "runScript",
+          "target": "$('#south').remove()",
+          "value": "",
+          "id": "9923ef61-a73f-47af-8510-69d9a4a6da30"
+        },
+        {
           "id": "8c20dfba-979a-4277-8d33-d541c4ba6b9d",
           "comment": "",
           "command": "click",
           "target": "css=.ui-dialog button.ok-button",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "9e4eeb4d-9560-4eab-8393-cb556bdba73a"
         },
         {
           "id": "dbf9b3cd-440b-4792-aca1-29e4fd5a920e",
@@ -9039,20 +9075,18 @@
           "value": ""
         },
         {
-          "id": "5339114d-82c8-4d61-ac24-b635bf17ea26",
+          "id": "a1bc9739-c6c2-4d8d-8e69-1e8d1e1f552b",
           "comment": "",
-          "command": "runScript",
-          "target": "$('a[href*=\"page=visit_lab_data\"]').slice(1,2).attr('data-click','1')",
+          "command": "click",
+          "target": "xpath=(//a[contains(@href,'page=visit_lab_data')])[2]",
           "targets": [],
           "value": ""
         },
         {
-          "id": "a1bc9739-c6c2-4d8d-8e69-1e8d1e1f552b",
-          "comment": "",
-          "command": "click",
-          "target": "css=a[data-click]",
-          "targets": [],
-          "value": ""
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "id": "30f6a4f4-196f-49c1-97eb-b97f3c2313cf"
         },
         {
           "id": "a20bc31a-e06d-4d3a-9cf1-b8a81a3de4f1",
@@ -9165,12 +9199,24 @@
           "value": ""
         },
         {
+          "command": "runScript",
+          "target": "$('#south').remove()",
+          "value": "",
+          "id": "3db9604c-606e-41c2-8847-dac39f80af9d"
+        },
+        {
           "id": "6a860668-8453-4ed1-bd81-27eb98e46737",
           "comment": "",
           "command": "click",
           "target": "css=.ui-dialog button.ok-button",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "064399dc-7f0d-48a7-a531-f6b3b5f456ba"
         },
         {
           "id": "2ac24be4-3335-4b0e-b85b-7ef39af3b1fc",
@@ -9261,20 +9307,12 @@
           "value": ""
         },
         {
-          "id": "a4f65a2b-db7f-477e-89d4-b04dc8143b12",
-          "comment": "",
-          "command": "runScript",
-          "target": "$('a[href*=\"page=visit_lab_data\"]').slice(1,2).attr('data-click','1')",
-          "targets": [],
-          "value": ""
-        },
-        {
-          "id": "6f22db9d-44bf-4264-b717-f536450b7643",
           "comment": "",
           "command": "click",
-          "target": "css=a[data-click]",
+          "target": "xpath=(//a[contains(@href,'page=visit_lab_data')])[2]",
           "targets": [],
-          "value": ""
+          "value": "",
+          "id": "86f2241d-c9ba-41a0-9e86-541461685767"
         },
         {
           "id": "d359c7ce-e4b8-4d8f-a9a1-5531d367c91f",
@@ -9371,6 +9409,12 @@
           "target": "css=a[href*=\"page=visit_lab_data\"]",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "id": "05c7c8a6-4a7c-467f-acf2-4528dbe7eb79"
         },
         {
           "id": "6678c571-79d8-4e11-96da-14b6b7ecaee2",
@@ -10233,6 +10277,12 @@
           "id": "63e27082-d4b7-4118-b72e-5422b5691214"
         },
         {
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "id": "3aec33f4-ea14-4fac-9e47-0f3e35fb67cf"
+        },
+        {
           "id": "e1998f7e-0731-4f4d-b5db-639cce78bd35",
           "comment": "",
           "command": "click",
@@ -10551,12 +10601,30 @@
           "value": ""
         },
         {
+          "command": "runScript",
+          "target": "$('#south').remove()",
+          "value": "",
+          "id": "a7355421-2b89-436f-b8b3-7a27556a3f99"
+        },
+        {
+          "command": "pause",
+          "target": "500",
+          "value": "",
+          "id": "de0e5d75-00ae-41c3-b830-f08e3d808db7"
+        },
+        {
           "id": "cde1570f-e780-41d0-b5ca-1e34988a6d0e",
           "comment": "",
           "command": "click",
           "target": "css=.mod-packmgmt-formtable input[type=\"submit\"]",
           "targets": [],
           "value": ""
+        },
+        {
+          "command": "waitForElementPresent",
+          "target": "id=south",
+          "value": "30000",
+          "id": "0fcd6411-c3ad-4b27-8eaa-acf282da1b80"
         },
         {
           "id": "3f838dc6-958d-47d1-866b-d11d6aaf1727",
@@ -10839,20 +10907,20 @@
           "value": ""
         },
         {
-          "id": "4f8aebf7-b2fb-4a17-8ab5-7e3c807fc925",
-          "comment": "",
-          "command": "runScript",
-          "target": "$('#south').remove()",
-          "targets": [],
-          "value": ""
-        },
-        {
           "id": "7d0cbc59-ef29-49df-a544-4cb368a01617",
           "comment": "",
           "command": "select",
           "target": "name=enabled",
           "targets": [],
           "value": "value=0"
+        },
+        {
+          "id": "4f8aebf7-b2fb-4a17-8ab5-7e3c807fc925",
+          "comment": "",
+          "command": "runScript",
+          "target": "$('#south').remove()",
+          "targets": [],
+          "value": ""
         },
         {
           "id": "113bf07c-4da4-44b0-8e87-45fc83d772ee",

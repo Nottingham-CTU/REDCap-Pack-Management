@@ -80,7 +80,9 @@ class Test_12_Manual_reassignment:
     None if (element := self.driver.find_element(By.CSS_SELECTOR, "input[type=\"checkbox\"][data-test-assigned-pack]")).is_selected() else element.click()
     self.driver.execute_script("$('input[type=\"checkbox\"][data-test-assigned-pack]').trigger('click').trigger('click')")
     self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-packassign button.btn-primaryrc").click()
+    self.driver.execute_script("$('#south').remove()")
     self.driver.find_element(By.CSS_SELECTOR, ".ui-dialog button.ok-button").click()
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=visit_lab_data\"]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
@@ -101,7 +103,9 @@ class Test_12_Manual_reassignment:
     self.driver.find_element(By.CSS_SELECTOR, "[name=\"event_id\"] option:nth-child(2)").click()
     self.driver.find_element(By.CSS_SELECTOR, "[name=\"instance\"] option:nth-child(2)").click()
     self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-packassign button.btn-primaryrc").click()
+    self.driver.execute_script("$('#south').remove()")
     self.driver.find_element(By.CSS_SELECTOR, ".ui-dialog button.ok-button").click()
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=visit_lab_data\"]").click()
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[name=\"pack_id\"][value=\"\"]")) == 0
@@ -120,7 +124,9 @@ class Test_12_Manual_reassignment:
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[type=\"checkbox\"][data-test-assigned-pack][data-assigned=\"true\"]")) > 0
     self.driver.execute_script("$('input[type=\"checkbox\"][data-pack-chkbx]').trigger('click')")
     self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-packassign button.btn-primaryrc").click()
+    self.driver.execute_script("$('#south').remove()")
     self.driver.find_element(By.CSS_SELECTOR, ".ui-dialog button.ok-button").click()
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.execute_script("$('input[type=\"checkbox\"][value=\"'+sessionStorage.getItem('test-pack1-id')+'\"]').attr('data-test-assigned-pack','1')")
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[type=\"checkbox\"][data-test-assigned-pack][data-assigned=\"false\"]")) > 0
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
@@ -134,8 +140,8 @@ class Test_12_Manual_reassignment:
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[data-test-assigned-pack]")) == 0
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[data-test-assigned-pack-extra]")) == 0
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
-    self.driver.execute_script("$('a[href*=\"page=visit_lab_data\"]').slice(1,2).attr('data-click','1')")
-    self.driver.find_element(By.CSS_SELECTOR, "a[data-click]").click()
+    self.driver.find_element(By.XPATH, "(//a[contains(@href,'page=visit_lab_data')])[2]").click()
+    time.sleep(0.5)
     self.driver.execute_script("$('#south').remove();dataEntrySubmit('submit-btn-savecontinue')")
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[name=\"pack_id\"][value=\"\"]")) == 0
@@ -150,7 +156,9 @@ class Test_12_Manual_reassignment:
     self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-submitset [role=\"tab\"]:nth-of-type(2)").click()
     self.driver.execute_script("$('input[type=\"checkbox\"][data-pack-chkbx]').trigger('click')")
     self.driver.find_element(By.CSS_SELECTOR, ".packmgmt-packassign button.btn-primaryrc").click()
+    self.driver.execute_script("$('#south').remove()")
     self.driver.find_element(By.CSS_SELECTOR, ".ui-dialog button.ok-button").click()
+    WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=visit_lab_data\"]").click()
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[name=\"pack_id\"][value=\"\"]")) == 0
@@ -162,8 +170,7 @@ class Test_12_Manual_reassignment:
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[data-test-assigned-pack]")) > 0
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[data-test-assigned-pack-extra]")) > 0
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
-    self.driver.execute_script("$('a[href*=\"page=visit_lab_data\"]').slice(1,2).attr('data-click','1')")
-    self.driver.find_element(By.CSS_SELECTOR, "a[data-click]").click()
+    self.driver.find_element(By.XPATH, "(//a[contains(@href,'page=visit_lab_data')])[2]").click()
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[name=\"pack_id\"][value=\"\"]")) == 0
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[name=\"pack_count\"][value=\"\"]")) == 0
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "input[name=\"pack_date\"][value=\"\"]")) == 0
@@ -176,6 +183,7 @@ class Test_12_Manual_reassignment:
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"DataEntry/record_status_dashboard.php\"]").click()
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=visit_lab_data\"]").click()
+    time.sleep(0.5)
     self.driver.execute_script("$('#south').remove();dataEntrySubmit('submit-btn-deleteform')")
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"prefix=pack_management\"][href*=\"page=configure\"]").click()
