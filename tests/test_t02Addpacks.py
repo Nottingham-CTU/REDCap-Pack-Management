@@ -57,8 +57,8 @@ class Test_02_Add_packs:
     assert len(self.driver.find_elements(By.CSS_SELECTOR, "a[href*=\"page=packs_add\"][href*=\"cat_id=packs2\"]")) > 0
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=packs_add\"][href*=\"cat_id=packs2\"]").click()
     self.driver.find_element(By.NAME, "id").send_keys("1")
-    self.driver.execute_script("$('#south').remove();$('#singlepack input[type=\"submit\"]').trigger('click')")
-    #self.driver.find_element(By.CSS_SELECTOR, "div#singlepack input[type=\"submit\"]").click()
+    self.driver.execute_script("$('#south').remove()")
+    self.driver.find_element(By.CSS_SELECTOR, "#singlepack input[type=\"submit\"]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     assert len(self.driver.find_elements(By.CSS_SELECTOR, ".mod-packmgmt-okmsg")) > 0
     self.driver.find_element(By.CSS_SELECTOR, "a[href=\"#multiplepacks\"]").click()
@@ -95,12 +95,12 @@ class Test_02_Add_packs:
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"page=packs_add\"][href*=\"cat_id=packs2\"]").click()
     self.driver.find_element(By.NAME, "id").send_keys("1")
     self.driver.execute_script("$('#south').remove()")
-    self.driver.find_element(By.CSS_SELECTOR, "div[id=\"singlepack\"] input[type=\"submit\"]").click()
+    self.driver.find_element(By.CSS_SELECTOR, "#singlepack input[type=\"submit\"]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     assert len(self.driver.find_elements(By.CSS_SELECTOR, ".mod-packmgmt-okmsg")) == 0
     self.driver.find_element(By.NAME, "id").send_keys("4")
     self.driver.execute_script("$('#south').remove()")
-    self.driver.find_element(By.CSS_SELECTOR, "div[id=\"singlepack\"] input[type=\"submit\"]").click()
+    self.driver.find_element(By.CSS_SELECTOR, "#singlepack input[type=\"submit\"]").click()
     WebDriverWait(self.driver, 30).until(expected_conditions.presence_of_element_located((By.ID, "south")))
     assert len(self.driver.find_elements(By.CSS_SELECTOR, ".mod-packmgmt-okmsg")) > 0
     self.driver.find_element(By.CSS_SELECTOR, "a[href*=\"action=myprojects\"]").click()
