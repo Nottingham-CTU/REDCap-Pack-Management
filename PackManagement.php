@@ -165,9 +165,18 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			}
 			else
 			{
+				$instanceNum = intval( $_GET['instance'] ?? 1 );
+				if ( isset( $_GET['extmod_instance_table_add_new'] ) )
+				{
+					// The Instance Table module might interfere with the instance number when
+					// creating a new instance. If it has set its flag to indicate a new instance
+					// should be added, then use an unrealistically high instance number. This
+					// should ensure there is not a match with an existing instance.
+					$instanceNum = 999999;
+				}
 				$infoRecord = [ 'record' => $_GET['id'],
 				                'event' => intval( $_GET['event_id'] ?? '' ),
-				                'instance' => intval( $_GET['instance'] ?? 1 ),
+				                'instance' => $instanceNum,
 				                'form_name' => $_GET['page'] ];
 				if ( $infoRecord['event'] == '' )
 				{
