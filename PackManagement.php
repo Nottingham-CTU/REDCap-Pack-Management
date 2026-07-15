@@ -311,87 +311,98 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		$oldGetPid = $_GET['pid'];
 		$_GET['pid'] = (string) $projectID;
 
-		$this->dbGetLock();
 		// Get the pack categories which are relevant to this submission, excluding selection
 		// triggers which are handled later.
-		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS id, ' .
-		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.logic\')) AS logic, ' .
-		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) ' .
-		                          'AS packfield, JSON_UNQUOTE(JSON_EXTRACT(`value`,' .
-		                          '\'$.valuefield\')) AS valuefield ' .
-		                          'FROM redcap_external_module_settings ems ' .
-		                          'JOIN redcap_external_modules em ' .
-		                          'ON ems.external_module_id = em.external_module_id ' .
-		                          'WHERE em.directory_prefix = ? AND ems.`key` LIKE ? ' .
-		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\') ' .
-		                          'AND ( JSON_CONTAINS(`value`,\'"A"\',\'$.trigger\') ' .
-		                            'OR ( JSON_CONTAINS(`value`,\'"F"\',\'$.trigger\') ' .
-		                              'AND JSON_CONTAINS(`value`,?,\'$.form\') ) )',
-		                          [ $this->getModuleDirectoryBaseName(),
-		                            'p' . $projectID . '-packcat-%',
-		                            json_encode( $instrument ) ] );
-		$listCat = [];
-		while ( $infoCat = $queryCat->fetch_assoc() )
+		$sqlCat = 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS id, ' .
+		          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.logic\')) AS logic, ' .
+		          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) AS packfield, ' .
+		          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.valuefield\')) AS valuefield ' .
+		          'FROM redcap_external_module_settings ems JOIN redcap_external_modules em ' .
+		          'ON ems.external_module_id = em.external_module_id ' .
+		          'WHERE em.directory_prefix = ? AND ems.`key` LIKE ? ' .
+		          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\') ' .
+		          'AND ( JSON_CONTAINS(`value`,\'"A"\',\'$.trigger\') ' .
+		          'OR ( JSON_CONTAINS(`value`,\'"F"\',\'$.trigger\') ' .
+		          'AND JSON_CONTAINS(`value`,?,\'$.form\') ) )';
+		$sqlParamsCat = [ $this->getModuleDirectoryBaseName(),
+		                  'p' . $projectID . '-packcat-%', json_encode( $instrument ) ];
+
+		if ( $this->query( 'SELECT count(*) num FROM (' . $sqlCat . ') counttbl',
+		                   $sqlParamsCat )->fetch_assoc()['num'] > 0 )
 		{
-			// Check that the pack field on the record/event/instance is empty and that the
-			// logic (if specified) evaluates as true.
-			if ( $this->getValues( $projectID, $recordID, $eventID, $repeatInstance,
-			                       $infoCat['packfield'] )[ $infoCat['packfield'] ] == '' &&
-			     ( $infoCat['logic'] == '' ||
-			       \REDCap::evaluateLogic( $infoCat['logic'], $projectID, $recordID, $eventID,
-			                               $repeatInstance, $instrument, $instrument ) ) )
+			$this->dbGetLock();
+			$queryCat = $this->query( $sqlCat, $sqlParamsCat );
+			$listCat = [];
+			while ( $infoCat = $queryCat->fetch_assoc() )
 			{
-				$listCat[ $infoCat['id'] ] = $infoCat['valuefield'];
+				// Check that the pack field on the record/event/instance is empty and that the
+				// logic (if specified) evaluates as true.
+				if ( $this->getValues( $projectID, $recordID, $eventID, $repeatInstance,
+				                       $infoCat['packfield'] )[ $infoCat['packfield'] ] == '' &&
+				     ( $infoCat['logic'] == '' ||
+				       \REDCap::evaluateLogic( $infoCat['logic'], $projectID, $recordID, $eventID,
+				                               $repeatInstance, $instrument, $instrument ) ) )
+				{
+					$listCat[ $infoCat['id'] ] = $infoCat['valuefield'];
+				}
 			}
-		}
-		foreach ( $listCat as $catID => $valueField )
-		{
-			// Get and assign pack for the pack category.
-			$packValue = null;
-			if ( $valueField != '' )
+			foreach ( $listCat as $catID => $valueField )
 			{
-				$packValue = $this->getValues( $projectID, $recordID, $eventID,
-				                               $repeatInstance, $valueField )[ $valueField ];
+				// Get and assign pack for the pack category.
+				$packValue = null;
+				if ( $valueField != '' )
+				{
+					$packValue = $this->getValues( $projectID, $recordID, $eventID,
+					                               $repeatInstance, $valueField )[ $valueField ];
+				}
+				$infoData = $this->choosePack( $catID, $recordID, $packValue );
+				// Save the data to the record.
+				if ( $infoData !== false )
+				{
+					$this->updateValues( $projectID, $recordID, $eventID,
+					                     $repeatInstance, $infoData );
+				}
 			}
-			$infoData = $this->choosePack( $catID, $recordID, $packValue );
-			// Save the data to the record.
-			if ( $infoData !== false )
-			{
-				$this->updateValues( $projectID, $recordID, $eventID, $repeatInstance, $infoData );
-			}
+			$this->dbReleaseLock();
 		}
 
+
 		// Get the pack categories with selection trigger.
-		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS id, ' .
-		                          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) ' .
-		                          'AS packfield ' .
-		                          'FROM redcap_external_module_settings ems ' .
-		                          'JOIN redcap_external_modules em ' .
-		                          'ON ems.external_module_id = em.external_module_id ' .
-		                          'WHERE em.directory_prefix = ? AND ems.`key` LIKE ? ' .
-		                          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\') ' .
-		                          'AND ( JSON_CONTAINS(`value`,\'"S"\',\'$.trigger\') )',
-		                          [ $this->getModuleDirectoryBaseName(),
-		                            'p' . $projectID . '-packcat-%' ] );
-		$listCat = [];
-		while( $infoCat = $queryCat->fetch_assoc() )
+		$sqlCat = 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS id, ' .
+		          'JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) AS packfield ' .
+		          'FROM redcap_external_module_settings ems JOIN redcap_external_modules em ' .
+		          'ON ems.external_module_id = em.external_module_id ' .
+		          'WHERE em.directory_prefix = ? AND ems.`key` LIKE ? ' .
+		          'AND JSON_CONTAINS(`value`,\'true\',\'$.enabled\') ' .
+		          'AND ( JSON_CONTAINS(`value`,\'"S"\',\'$.trigger\') )';
+		$sqlParamsCat = [ $this->getModuleDirectoryBaseName(), 'p' . $projectID . '-packcat-%' ];
+
+		if ( $this->query( 'SELECT count(*) num FROM (' . $sqlCat . ') counttbl',
+		                   $sqlParamsCat )->fetch_assoc()['num'] > 0 )
 		{
-			// Only consider categories with a submitted selection field.
-			if ( isset( $_POST[ $infoCat['packfield'] . ':packmanagement-selection' ] ) )
+			$this->dbGetLock();
+			$queryCat = $this->query( $sqlCat, $sqlParamsCat );
+			$listCat = [];
+			while( $infoCat = $queryCat->fetch_assoc() )
 			{
-				// Get the pack field to be assigned for this category.
-				$listCat[ $infoCat['id'] ] = $infoCat['packfield'];
+				// Only consider categories with a submitted selection field.
+				if ( isset( $_POST[ $infoCat['packfield'] . ':packmanagement-selection' ] ) )
+				{
+					// Get the pack field to be assigned for this category.
+					$listCat[ $infoCat['id'] ] = $infoCat['packfield'];
+				}
 			}
+			foreach ( $listCat as $catID => $packField )
+			{
+				// Get and assign pack for the pack category.
+				$infoData = $this->choosePack( $catID, $recordID, null,
+				                               null, $_POST[ $packField ] );
+				// Save the data to the record.
+				$this->updateValues( $projectID, $recordID, $eventID, $repeatInstance,
+				                     ( $infoData !== false ? $infoData : [ $packField => '' ] ) );
+			}
+			$this->dbReleaseLock();
 		}
-		foreach ( $listCat as $catID => $packField )
-		{
-			// Get and assign pack for the pack category.
-			$infoData = $this->choosePack( $catID, $recordID, null, null, $_POST[ $packField ] );
-			// Save the data to the record.
-			$this->updateValues( $projectID, $recordID, $eventID, $repeatInstance,
-			                     ( $infoData !== false ? $infoData : [ $packField => '' ] ) );
-		}
-		$this->dbReleaseLock();
 
 		// Restore the original global pid variable.
 		$_GET['pid'] = $oldGetPid;
