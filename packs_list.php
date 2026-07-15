@@ -173,7 +173,7 @@ if ( isset( $_POST['action'] ) )
 		if ( empty( $listErrors ) )
 		{
 			// Acknowledge each pack as received.
-			$module->dbGetLock();
+			$module->dbGetLock( $module->getProjectId() );
 			foreach ( $listChosen as $packID )
 			{
 				$module->updatePackProperty( $module->getProjectId(), $infoCategory['id'], $packID,
@@ -181,7 +181,7 @@ if ( isset( $_POST['action'] ) )
 				$module->updatePackLog( $module->getProjectId(), $infoCategory['id'],
 				                        'PACK_RCPT', [ 'id' => $packID ] );
 			}
-			$module->dbReleaseLock();
+			$module->dbReleaseLock( $module->getProjectId() );
 		}
 	}
 	// Issue packs to DAG.
@@ -217,7 +217,7 @@ if ( isset( $_POST['action'] ) )
 		{
 			// Assign each pack to the selected DAG. If packs must be marked as received then
 			// clear the received flag.
-			$module->dbGetLock();
+			$module->dbGetLock( $module->getProjectId() );
 			if ( $_POST['dag_id'] == '' )
 			{
 				$_POST['dag_id'] = null;
@@ -236,7 +236,7 @@ if ( isset( $_POST['action'] ) )
 				                        $_POST['dag_id'] === null ? 'PACK_UNISSUE' : 'PACK_ISSUE',
 				                        $infoLog );
 			}
-			$module->dbReleaseLock();
+			$module->dbReleaseLock( $module->getProjectId() );
 		}
 	}
 	// Mark packs as invalid.
@@ -277,7 +277,7 @@ if ( isset( $_POST['action'] ) )
 			$packsInvalid = empty( $listInvalidPacks );
 			$invalidDesc = trim( str_replace( [ "\r\n", "\r" ], "\n", $_POST['invalid_desc'] ) );
 			// Mark each pack as (in)valid.
-			$module->dbGetLock();
+			$module->dbGetLock( $module->getProjectId() );
 			foreach ( $listChosen as $packID )
 			{
 				$module->updatePackProperty( $module->getProjectId(), $infoCategory['id'], $packID,
@@ -289,7 +289,7 @@ if ( isset( $_POST['action'] ) )
 				                        $packsInvalid ? 'PACK_INVALID' : 'PACK_VALID',
 				                        $infoLog);
 			}
-			$module->dbReleaseLock();
+			$module->dbReleaseLock( $module->getProjectId() );
 		}
 	}
 	// Assign or unassign pack to record, or exchange two packs.
@@ -386,7 +386,7 @@ if ( isset( $_POST['action'] ) )
 					$listPackFields[] = $packField['field'];
 				}
 			}
-			$module->dbGetLock();
+			$module->dbGetLock( $module->getProjectId() );
 			// Assigning or unassinging single pack, or exchanging 1 assigned and 1 unassigned pack.
 			if ( count( $listChosen ) == 1 || count( $listUnassignedPacks ) == 1 )
 			{
@@ -539,7 +539,7 @@ if ( isset( $_POST['action'] ) )
 					}
 				}
 			}
-			$module->dbReleaseLock();
+			$module->dbReleaseLock( $module->getProjectId() );
 		}
 	}
 	$_SESSION['pack_management_listerrors'] = json_encode( $listErrors );

@@ -330,7 +330,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		if ( $this->query( 'SELECT count(*) num FROM (' . $sqlCat . ') counttbl',
 		                   $sqlParamsCat )->fetch_assoc()['num'] > 0 )
 		{
-			$this->dbGetLock();
+			$this->dbGetLock( $projectID );
 			$queryCat = $this->query( $sqlCat, $sqlParamsCat );
 			$listCat = [];
 			while ( $infoCat = $queryCat->fetch_assoc() )
@@ -363,7 +363,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 					                     $repeatInstance, $infoData );
 				}
 			}
-			$this->dbReleaseLock();
+			$this->dbReleaseLock( $projectID );
 		}
 
 
@@ -380,7 +380,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		if ( $this->query( 'SELECT count(*) num FROM (' . $sqlCat . ') counttbl',
 		                   $sqlParamsCat )->fetch_assoc()['num'] > 0 )
 		{
-			$this->dbGetLock();
+			$this->dbGetLock( $projectID );
 			$queryCat = $this->query( $sqlCat, $sqlParamsCat );
 			$listCat = [];
 			while( $infoCat = $queryCat->fetch_assoc() )
@@ -401,7 +401,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 				$this->updateValues( $projectID, $recordID, $eventID, $repeatInstance,
 				                     ( $infoData !== false ? $infoData : [ $packField => '' ] ) );
 			}
-			$this->dbReleaseLock();
+			$this->dbReleaseLock( $projectID );
 		}
 
 		// Restore the original global pid variable.
@@ -512,7 +512,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 				// For each instance of this record/event.
 				for ( $instanceNum = 1; $instanceNum <= $maxInstance; $instanceNum++ )
 				{
-					$this->dbGetLock();
+					$this->dbGetLock( $projectID );
 					// Check that the pack field on the record/event/instance is empty, that the
 					// pack field is not locked and that the logic (if specified) evaluates as true.
 					if ( ! ( $this->getValues( $projectID, $recordID, $eventID, $instanceNum,
@@ -557,7 +557,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 							                       [ 'id' => $infoData[ $infoCat['packfield'] ] ] );
 						}
 					}
-					$this->dbReleaseLock();
+					$this->dbReleaseLock( $projectID );
 				}
 			}
 			// Update last-run timestamp for this pack category.
@@ -570,7 +570,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 	// Assign a minimization pack as requested by the Minimization module.
 	public function assignMinimPack( $recordID, $listMinimCodes, $randoField = '', $packID = null )
 	{
-		$this->dbGetLock();
+		$this->dbGetLock( $this->getProjectId() );
 		// Get pack category for minimization field.
 		$queryCat = $this->query( 'SELECT JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.id\')) AS ' .
 		                          'id, JSON_UNQUOTE(JSON_EXTRACT(`value`,\'$.packfield\')) AS ' .
@@ -588,7 +588,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		$infoCat = $queryCat->fetch_assoc();
 		if ( empty( $infoCat ) )
 		{
-			$this->dbReleaseLock();
+			$this->dbReleaseLock( $this->getProjectId() );
 			return false;
 		}
 		// Assign pack
@@ -619,7 +619,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 				                                      $packID, 'value' );
 			}
 		}
-		$this->dbReleaseLock();
+		$this->dbReleaseLock( $this->getProjectId() );
 		if ( $infoPack === false )
 		{
 			return false;
@@ -637,7 +637,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 	public function choosePack( $catID, $recordID, $value = null, $reqPackValues = null,
 	                            $packID = null, $ignoreExpiry = false )
 	{
-		$this->dbGetLock();
+		$this->dbGetLock( $this->getProjectId() );
 		// Get the pack category details.
 		$queryCat = $this->query( 'SELECT ems.`value` AS category ' .
 		                          'FROM redcap_external_module_settings ems JOIN ' .
@@ -649,7 +649,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		$infoCat = $queryCat->fetch_assoc();
 		if ( ! is_array( $infoCat ) )
 		{
-			$this->dbReleaseLock();
+			$this->dbReleaseLock( $this->getProjectId() );
 			return false;
 		}
 		$infoCat = json_decode( $infoCat['category'], true );
@@ -668,7 +668,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			if ( empty( $infoDAG ) )
 			{
 				// Record not in a DAG, cannot assign pack.
-				$this->dbReleaseLock();
+				$this->dbReleaseLock( $this->getProjectId() );
 				return false;
 			}
 			$sqlPacks .= ' AND packlist.dag = ? AND packlist.dag_rcpt = 1';
@@ -740,7 +740,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		if ( $infoPack === null )
 		{
 			// No pack available.
-			$this->dbReleaseLock();
+			$this->dbReleaseLock( $this->getProjectId() );
 			return false;
 		}
 		// Set the pack as assigned and write the pack assignment to the log.
@@ -748,7 +748,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		                           $infoPack['id'], 'assigned', true );
 		$this->updatePackLog( $this->getProjectId(), $infoCat['id'], 'PACK_ASSIGN',
 		                      [ 'id' => $infoPack['id'], 'record' => $recordID ] );
-		$this->dbReleaseLock();
+		$this->dbReleaseLock( $this->getProjectId() );
 		// Return the fields/values to be updated on the record.
 		$infoValues = [ $infoCat['packfield'] => $infoPack['id'] ];
 		if ( $infoCat['datefield'] != '' )
@@ -847,14 +847,14 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 
 
 	// Functions to get/release database lock.
-	public function dbGetLock()
+	public function dbGetLock( $projectID )
 	{
-		$this->query( 'DO GET_LOCK(?,60)', [ $GLOBALS['db'] . '.pack_management' ] );
+		$this->query( 'DO GET_LOCK(?,120)', [ $GLOBALS['db'] . '.pack_management.p' . $projectID ] );
 	}
 
-	public function dbReleaseLock()
+	public function dbReleaseLock( $projectID )
 	{
-		$this->query( 'DO RELEASE_LOCK(?)', [ $GLOBALS['db'] . '.pack_management' ] );
+		$this->query( 'DO RELEASE_LOCK(?)', [ $GLOBALS['db'] . '.pack_management.p' . $projectID ] );
 	}
 
 
@@ -926,7 +926,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 	// Get a list of valid assignable packs from the specified pack category.
 	public function getAssignablePacks( $catID, $recordID, $value = null, $ignoreExpiry = false )
 	{
-		$this->dbGetLock();
+		$this->dbGetLock( $this->getProjectId() );
 		// Get the pack category details.
 		$queryCat = $this->query( 'SELECT ems.`value` AS category ' .
 		                          'FROM redcap_external_module_settings ems JOIN ' .
@@ -938,7 +938,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		$infoCat = $queryCat->fetch_assoc();
 		if ( ! is_array( $infoCat ) )
 		{
-			$this->dbReleaseLock();
+			$this->dbReleaseLock( $this->getProjectId() );
 			return [];
 		}
 		$infoCat = json_decode( $infoCat['category'], true );
@@ -957,7 +957,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			if ( empty( $infoDAG ) )
 			{
 				// Record not in a DAG, cannot assign pack.
-				$this->dbReleaseLock();
+				$this->dbReleaseLock( $this->getProjectId() );
 				return [];
 			}
 			$sqlPacks .= ' AND packlist.dag = ? AND packlist.dag_rcpt = 1';
@@ -1001,7 +1001,7 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 			unset( $infoPack['extrafields'] );
 			$listPacks[ $infoPack['id'] ] = $infoPack;
 		}
-		$this->dbReleaseLock();
+		$this->dbReleaseLock( $this->getProjectId() );
 		// Return the list of assignable packs.
 		return $listPacks;
 	}

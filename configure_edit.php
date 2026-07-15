@@ -56,7 +56,7 @@ else
 	{
 		if ( $canDelete )
 		{
-			$module->dbGetLock();
+			$module->dbGetLock( $module->getProjectId() );
 			$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packcat-' .
 			                              $_GET['cat_id'] );
 			$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packlist-' .
@@ -65,7 +65,7 @@ else
 			                              $_GET['cat_id'] );
 			$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packcatats-' .
 			                              $_GET['cat_id'] );
-			$module->dbReleaseLock();
+			$module->dbReleaseLock( $module->getProjectId() );
 		}
 		header( 'Location: ' . $module->getUrl( 'configure.php' ) );
 		exit;
@@ -74,7 +74,7 @@ else
 	{
 		if ( $canDelete )
 		{
-			$module->dbGetLock();
+			$module->dbGetLock( $module->getProjectId() );
 			$listReset = $module->query( 'SELECT JSON_SEARCH( ems.`value`, \'all\', \'CAT\\_%\', ' .
 			                             '\'\\\\\', \'$[*].event\' ) val ' .
 			                             'FROM redcap_external_module_settings ems ' .
@@ -107,7 +107,7 @@ else
 			                           $_GET['cat_id'], '[]' );
 			$module->setSystemSetting( 'p' . $module->getProjectId() . '-packlog-' .
 			                           $_GET['cat_id'], $resetLog );
-			$module->dbReleaseLock();
+			$module->dbReleaseLock( $module->getProjectId() );
 		}
 		header( 'Location: ' . $module->getUrl( 'configure.php' ) );
 		exit;
@@ -199,7 +199,7 @@ else
 		{
 			$hasError = true;
 		}
-		$module->dbGetLock();
+		$module->dbGetLock( $module->getProjectId() );
 		// Check that there is not another minimization pack category with the same rando field
 		// already enabled for this project. Multiple non-enabled minimization pack categories can
 		// co-exist but only one can be enabled at any time for a given rando field.
@@ -239,11 +239,11 @@ else
 			}
 			$module->updatePackLog( $module->getProjectId(), $infoCategory['id'],
 			                        $logEvent, $infoCategory );
-			$module->dbReleaseLock();
+			$module->dbReleaseLock( $module->getProjectId() );
 			header( 'Location: ' . $module->getUrl( 'configure.php' ) );
 			exit;
 		}
-		$module->dbReleaseLock();
+		$module->dbReleaseLock( $module->getProjectId() );
 	}
 }
 

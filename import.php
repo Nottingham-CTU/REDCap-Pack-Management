@@ -134,7 +134,7 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 		{
 			$listImported[ $data[ $i ]['id'] ] = $data[ $i ];
 		}
-		$module->dbGetLock();
+		$module->dbGetLock( $module->getProjectId() );
 		foreach ( $_POST as $key => $val )
 		{
 			if ( substr( $key, 0, 8 ) == 'cat-add-' )
@@ -194,7 +194,7 @@ elseif ( ! empty( $_POST ) ) // normal POST request (confirming import)
 				}
 			}
 		}
-		$module->dbReleaseLock();
+		$module->dbReleaseLock( $module->getProjectId() );
 	}
 }
 

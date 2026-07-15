@@ -195,7 +195,7 @@ if ( ! empty( $_POST ) )
 		$listPackIDs[] = $infoPack['id'];
 	}
 	// Get existing pack IDs and check for collisions.
-	$module->dbGetLock();
+	$module->dbGetLock( $module->getProjectId() );
 	$queryExistingPacks =
 	       $module->query( 'SELECT packlist.id FROM redcap_external_module_settings ems, ' .
 	                       'redcap_external_modules em, ' . $module->makePacklistSQL('ems.value') .
@@ -231,7 +231,7 @@ if ( ! empty( $_POST ) )
 			                 'p' . $module->getProjectId() . '-packlog-' . $infoCategory['id'] ] );
 		}
 	}
-	$module->dbReleaseLock();
+	$module->dbReleaseLock( $module->getProjectId() );
 }
 
 

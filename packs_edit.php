@@ -67,11 +67,11 @@ if ( ! empty( $_POST ) )
 	// If pack deleted.
 	if ( isset( $_POST['action'] ) && $_POST['action'] == 'delete' )
 	{
-		$module->dbGetLock();
+		$module->dbGetLock( $module->getProjectId() );
 		$module->deletePack( $module->getProjectId(), $infoCategory['id'], $infoPack['id'] );
 		$module->updatePackLog( $module->getProjectId(), $infoCategory['id'],
 		                        'PACK_DELETE', [ 'id' => $infoPack['id'] ] );
-		$module->dbReleaseLock();
+		$module->dbReleaseLock( $module->getProjectId() );
 		header( 'Location: ' . $module->getUrl( 'packs_list.php?cat_id=' . $infoCategory['id'] ) );
 		exit;
 	}
@@ -135,12 +135,12 @@ if ( ! empty( $_POST ) )
 			$listProperties[] = $property;
 			$listValues[] = $value;
 		}
-		$module->dbGetLock();
+		$module->dbGetLock( $module->getProjectId() );
 		$module->updatePackProperty( $module->getProjectId(), $infoCategory['id'], $infoPack['id'],
 		                             $listProperties, $listValues );
 		$module->updatePackLog( $module->getProjectId(), $infoCategory['id'],
 		                        'PACK_UPDATE', [ 'id' => $infoPack['id'] ] + $updatedPack );
-		$module->dbReleaseLock();
+		$module->dbReleaseLock( $module->getProjectId() );
 	}
 	$_SESSION['pack_management_listerrors'] = json_encode( $listErrors );
 	header( 'Location: ' . $_SERVER['REQUEST_URI'] );
