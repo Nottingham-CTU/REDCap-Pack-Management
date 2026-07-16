@@ -1001,15 +1001,23 @@ $(function()
   $('[data-tblfilter]').each(function()
   {
     var vSelector = $(this).attr('data-tblfilter')
-    $(this).on('click', function( ev )
+    if ( $(vSelector.replace('"true"','"false"')).length == 0 ||
+         $(vSelector.replace('"false"','"true"')).length == 0 )
     {
-      ev.preventDefault()
-      $(vSelector).css('display', $(vSelector).css('display') == 'none' ? '' : 'none')
-      $(this).find('i').attr('class', 'far fa-eye' + ( $(vSelector).css('display') == 'none'
-                                                       ? '-slash' : '' ) )
-      $('.mod-packmgmt-listtable-container .scrollpos').css('height', '1px')
-      $('.mod-packmgmt-listtable-container').trigger('scroll')
-    })
+      $(this).css('display','none')
+    }
+    else
+    {
+      $(this).on('click', function( ev )
+      {
+        ev.preventDefault()
+        $(vSelector).css('display', $(vSelector).css('display') == 'none' ? '' : 'none')
+        $(this).find('i').attr('class', 'far fa-eye' + ( $(vSelector).css('display') == 'none'
+                                                         ? '-slash' : '' ) )
+        $('.mod-packmgmt-listtable-container .scrollpos').css('height', '1px')
+        $('.mod-packmgmt-listtable-container').trigger('scroll')
+      })
+    }
   })
   $('[data-tblfilter=".pack-col-assign"]').trigger('click')
   $('.mod-packmgmt-listtable').css('width','calc(100% - 8px)')
