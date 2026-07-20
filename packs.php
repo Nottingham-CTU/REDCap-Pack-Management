@@ -84,7 +84,7 @@ foreach ( $listCategories as $infoCategory )
 	}
 ?>
   </td>
-  <td style="width:125px;text-align:center">
+  <td style="width:135px;text-align:center">
 <?php
 	if ( $canConfigure || in_array( $roleName, $infoCategory['roles_view'] ) ||
 	     ( $infoCategory['dags'] && in_array( $roleName, $infoCategory['roles_dags'] ) ) ||
@@ -100,7 +100,7 @@ foreach ( $listCategories as $infoCategory )
 	}
 ?>
   </td>
-  <td style="width:125px;text-align:center">
+  <td style="width:135px;text-align:center">
 <?php
 	if ( $canConfigure || in_array( $roleName, $infoCategory['roles_add'] ) )
 	{

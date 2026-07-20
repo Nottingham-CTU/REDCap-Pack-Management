@@ -145,7 +145,7 @@ foreach ( $listCategories as $infoCategory )
 ?>
    </span>
   </td>
-  <td style="width:75px;text-align:center">
+  <td style="width:90px;text-align:center">
    <a href="<?php echo $module->getUrl( 'configure_edit.php?cat_id=' . $infoCategory['id'] ); ?>">
     <i class="fas fa-pencil-alt fs14"></i> <?php echo $module->tt('edit'), "\n"; ?>
    </a>
