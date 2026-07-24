@@ -27,6 +27,23 @@ if ( defined('SUPER_USER') && SUPER_USER == 1 && isset( $_GET['runtest'] ) )
 }
 
 
+// Get the list of languages for the module.
+$listLanguages = ['' => ''] +
+                 array_reduce( $module->getConfig()['project-settings'],
+                               fn( $c, $i ) => ( $i['key'] == 'reserved-language-project'
+                                                 ? array_column( $i['choices'], 'name', 'value' )
+                                                 : $c ),
+                               [] );
+
+if ( isset( $_POST['reserved-language-project'] ) &&
+     in_array( $_POST['reserved-language-project'], array_keys( $listLanguages ) ) )
+{
+	$module->setProjectSetting( 'reserved-language-project', $_POST['reserved-language-project'] );
+	header( 'Location: ' . $_SERVER['REQUEST_URI'] );
+	exit;
+}
+
+
 // Get the existing pack categories.
 $listCategories = [];
 $queryCategories = $module->query( 'SELECT ems.`value` FROM redcap_external_module_settings ems ' .
@@ -128,7 +145,7 @@ foreach ( $listCategories as $infoCategory )
 ?>
    </span>
   </td>
-  <td style="width:75px;text-align:center">
+  <td style="width:90px;text-align:center">
    <a href="<?php echo $module->getUrl( 'configure_edit.php?cat_id=' . $infoCategory['id'] ); ?>">
     <i class="fas fa-pencil-alt fs14"></i> <?php echo $module->tt('edit'), "\n"; ?>
    </a>
@@ -153,6 +170,27 @@ foreach ( $listCategories as $infoCategory )
   </a>
  </li>
 </ul>
+
+<p>&nbsp;</p>
+
+<form method="post">
+ <p>
+  <b><?php echo $module->tt('language'); ?></b>
+  <select name="reserved-language-project">
+<?php
+$currentLanguage = $module->getProjectSetting('reserved-language-project');
+foreach ( $listLanguages as $k => $v )
+{
+?>
+   <option value="<?php echo $module->escape($k); ?>"<?php
+	echo $currentLanguage == $k ? ' selected' : ''; ?>><?php echo $module->escape($v); ?></option>
+<?php
+}
+?>
+  </select>
+  <input type="submit" value="<?php echo $module->tt('save'); ?>">
+ </p>
+</form>
 
 <p>&nbsp;</p>
 

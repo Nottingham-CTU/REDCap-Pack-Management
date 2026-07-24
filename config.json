@@ -2,7 +2,7 @@
 	"name" : "Pack Management",
 	"tt_name" : "module_name",
 	"namespace" : "Nottingham\\PackManagement",
-	"description" : "Define packs which can be assigned to records.<br>Can be used for treatment packs, vouchers, or anything that is to be assigned to records from a list.<br>Packs can be optionally assigned to DAGs and grouped into blocks.<br>Can be used alongside the Minimization module.",
+	"description" : "Define packs which can be assigned to records.<br>Can be used for treatment packs, vouchers, or anything that is to be assigned to records from a list.<br>Packs can be optionally assigned to DAGs and grouped into blocks.<br>Can be used alongside the Minimization module.<br>Languages: English, English (British), Français",
 	"tt_description" : "module_desc",
 	"authors": [
 		{
@@ -39,7 +39,7 @@
 			"cron_description" : "Automatic pack assignment",
 			"method" : "autoAssignmentCron",
 			"cron_frequency" : "600",
-			"cron_max_run_time" : "86400"
+			"cron_max_run_time" : "1800"
 		}
 	]
 }

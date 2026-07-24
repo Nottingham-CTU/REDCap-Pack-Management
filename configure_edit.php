@@ -21,12 +21,16 @@ if ( $new )
 		header( 'Location: ' . $module->getUrl( 'configure.php' ) );
 		exit;
 	}
-	$infoCategory = [ 'id' => $_POST['cat_id'] ?? '', 'enabled' => true, 'trigger' => '',
-	                  'form' => '', 'logic' => '', 'nominim' => '', 'sel_label' => '',
+	$infoCategory = [ 'id' => $_POST['cat_id'] ?? '', 'enabled' => true,
+	                  'trigger' => '', 'new_event' => false, 'form' => '',
+	                  'logic' => '', 'nominim' => '', 'sel_label' => '',
 	                  'dags' => false, 'dags_rcpt' => false, 'blocks' => false, 'expire' => true,
 	                  'expire_buf' => 0, 'packfield' => '', 'datefield' => '', 'countfield' => '',
-	                  'valuefield' => '', 'extrafields' => [], 'psendfield' => '',
-	                  'prcptfield' => '', 'preturnfield' => '', 'ptrnssave_ri' => false,
+	                  'expirefield' => '', 'valuefield' => '', 'extrafields' => [],
+	                  'action_typefield' => '', 'action_listfield' => '', 'action_infofield' => '',
+	                  'action_ri' => false, 'fop' => false, 'fop_form' => '', 'fop_logic' => '',
+	                  'fop_packfield' => '', 'fop_datefield' => '', 'fop_countfield' => '',
+	                  'fop_expirefield' => '', 'fop_base_event' => '', 'fop_base_instance' => '',
 	                  'roles_view' => [], 'roles_dags' => [], 'roles_invalid' => [],
 	                  'roles_assign' => [], 'roles_add' => [], 'roles_edit' => [] ];
 }
@@ -52,7 +56,7 @@ else
 	{
 		if ( $canDelete )
 		{
-			$module->dbGetLock();
+			$module->dbGetLock( $module->getProjectId() );
 			$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packcat-' .
 			                              $_GET['cat_id'] );
 			$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packlist-' .
@@ -61,7 +65,7 @@ else
 			                              $_GET['cat_id'] );
 			$module->removeSystemSetting( 'p' . $module->getProjectId() . '-packcatats-' .
 			                              $_GET['cat_id'] );
-			$module->dbReleaseLock();
+			$module->dbReleaseLock( $module->getProjectId() );
 		}
 		header( 'Location: ' . $module->getUrl( 'configure.php' ) );
 		exit;
@@ -70,7 +74,7 @@ else
 	{
 		if ( $canDelete )
 		{
-			$module->dbGetLock();
+			$module->dbGetLock( $module->getProjectId() );
 			$listReset = $module->query( 'SELECT JSON_SEARCH( ems.`value`, \'all\', \'CAT\\_%\', ' .
 			                             '\'\\\\\', \'$[*].event\' ) val ' .
 			                             'FROM redcap_external_module_settings ems ' .
@@ -103,7 +107,7 @@ else
 			                           $_GET['cat_id'], '[]' );
 			$module->setSystemSetting( 'p' . $module->getProjectId() . '-packlog-' .
 			                           $_GET['cat_id'], $resetLog );
-			$module->dbReleaseLock();
+			$module->dbReleaseLock( $module->getProjectId() );
 		}
 		header( 'Location: ' . $module->getUrl( 'configure.php' ) );
 		exit;
@@ -112,12 +116,13 @@ else
 	{
 		// Build the category object from the form submission, begin with the standard options.
 		$infoCategory = [ 'id' => $_GET['cat_id'] ];
-		foreach ( [ 'enabled', 'trigger', 'form', 'logic', 'nominim', 'sel_label', 'dags',
-		            'dags_rcpt', 'blocks', 'expire', 'expire_buf', 'packfield', 'datefield',
-		            'countfield', 'valuefield' ]
+		foreach ( [ 'enabled', 'trigger', 'new_event', 'form', 'logic', 'nominim', 'sel_label',
+		            'dags', 'dags_rcpt', 'blocks', 'expire', 'expire_buf', 'packfield', 'datefield',
+		            'countfield', 'expirefield', 'valuefield' ]
 		          as $fieldName )
 		{
-			if ( in_array( $fieldName, [ 'enabled', 'dags', 'dags_rcpt', 'blocks', 'expire' ] ) )
+			if ( in_array( $fieldName, [ 'enabled', 'new_event', 'dags', 'dags_rcpt',
+			                             'blocks', 'expire' ] ) )
 			{
 				$infoCategory[ $fieldName ] = ( $_POST[ $fieldName ] == '1' );
 			}
@@ -155,10 +160,12 @@ else
 		{
 			$infoCategory['extrafields'] = new \stdClass;
 		}
-		// Add the pack send/received/returned fields.
-		foreach ( [ 'psendfield', 'prcptfield', 'preturnfield', 'ptrnssave_ri' ] as $fieldName )
+		// Add the packs action fields and follow-on packs fields.
+		foreach ( [ 'action_typefield', 'action_listfield', 'action_infofield', 'action_ri', 'fop',
+		            'fop_form', 'fop_logic', 'fop_packfield', 'fop_datefield', 'fop_countfield',
+		            'fop_expirefield', 'fop_base_event', 'fop_base_instance' ] as $fieldName )
 		{
-			if ( $fieldName == 'ptrnssave_ri' )
+			if ( $fieldName == 'action_ri' || $fieldName == 'fop' )
 			{
 				$infoCategory[ $fieldName ] = ( ( $_POST[ $fieldName ] ?? '' ) == '1' );
 			}
@@ -192,10 +199,10 @@ else
 		{
 			$hasError = true;
 		}
-		$module->dbGetLock();
+		$module->dbGetLock( $module->getProjectId() );
 		// Check that there is not another minimization pack category with the same rando field
 		// already enabled for this project. Multiple non-enabled minimization pack categories can
-		// co-exist but only onecan be enabled at any time for a given rando field.
+		// co-exist but only one can be enabled at any time for a given rando field.
 		if ( $infoCategory['enabled'] && $infoCategory['trigger'] == 'M' &&
 		     $module->query( 'SELECT 1 FROM redcap_external_module_settings ems JOIN ' .
 		                     'redcap_external_modules em ON ems.external_module_id = ' .
@@ -232,11 +239,11 @@ else
 			}
 			$module->updatePackLog( $module->getProjectId(), $infoCategory['id'],
 			                        $logEvent, $infoCategory );
-			$module->dbReleaseLock();
+			$module->dbReleaseLock( $module->getProjectId() );
 			header( 'Location: ' . $module->getUrl( 'configure.php' ) );
 			exit;
 		}
-		$module->dbReleaseLock();
+		$module->dbReleaseLock( $module->getProjectId() );
 	}
 }
 
@@ -292,6 +299,17 @@ foreach ( [ 'A' => 'trigger_auto', 'F' => 'trigger_form', 'M' => 'trigger_minim'
      </select>
     </td>
    </tr>
+   <tr data-trigger-auto="1">
+    <td><?php echo $module->tt('new_event'); ?>*</td>
+    <td>
+     <select name="new_event" required>
+      <option value="1"<?php echo $infoCategory['new_event'] ? ' selected' : ''; ?>><?php
+                                                    echo $module->tt('opt_yes'); ?></option>
+      <option value="0"<?php echo ! $infoCategory['new_event'] ? ' selected' : ''; ?>><?php
+                                                    echo $module->tt('opt_no'); ?></option>
+     </select>
+    </td>
+   </tr>
    <tr data-trigger-form="1">
     <td><?php echo $module->tt('form'); ?>*</td>
     <td>
@@ -332,7 +350,7 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
      </select>
     </td>
    </tr>
-   <tr data-trigger-select="1">
+   <tr data-selectionlabel="1" data-trigger-minim="1" data-trigger-select="1">
     <td><?php echo $module->tt('selection_label'); ?></td>
     <td>
      <input type="text" name="sel_label"
@@ -413,6 +431,13 @@ foreach ( [ 'S' => 'no_pack_for_minim_skip', 'P' => 'no_pack_for_minim_stop' ] a
                                                  '', 'integer' ), "\n"; ?>
     </td>
    </tr>
+   <tr data-pack-expire="1">
+    <td><?php echo $module->tt('pack_expire_proj_field'); ?></td>
+    <td>
+     <?php echo $module->getProjectFieldsSelect( 'expirefield', $infoCategory['expirefield'],
+                                                 '', 'datetime' ), "\n"; ?>
+    </td>
+   </tr>
    <tr data-valuefield="1">
     <td><?php echo $module->tt('pack_value_proj_field'); ?></td>
     <td>
@@ -470,6 +495,7 @@ foreach ( $module->getPackFieldTypes() as $typeCode => $typeLabel )
     </td>
    </tr>
    <tr><td colspan="2">&nbsp;</td></tr>
+   <tr><th colspan="2"><?php echo $module->tt('pack_category_permissions'); ?></th></tr>
    <tr>
     <td><?php echo $module->tt('roles_view_packs'); ?></td>
     <td>
@@ -517,21 +543,20 @@ foreach ( $module->getPackFieldTypes() as $typeCode => $typeLabel )
     <td><span class="field-desc"><?php echo $module->tt('roles_setting_note'); ?></span></td>
    </tr>
   </tbody>
-  <tbody>
-   <tr><td colspan="2">&nbsp;</td></tr>
-   <tr>
-    <td></td>
-    <td>
-     <input type="submit" value="<?php echo $module->tt('save'); ?>">
-    </td>
-   </tr>
-  </tbody>
  </table>
+ <p>&nbsp;</p>
+ <p style="display:flex;justify-content:space-evenly;max-width:97%">
+  <button type="submit" class="btn btn-sm btn-primaryrc">
+   <i class="fas fa-save fs14"></i> &nbsp;<?php echo $module->tt('save'), "\n"; ?>
+  </button>
+  <span style="width:110px"></span>
+ </p>
 </form>
 <?php
 if ( $canDelete )
 {
 ?>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <form method="post">
@@ -553,6 +578,8 @@ if ( $canDelete )
    var vVal = $(this).val()
    $('[data-trigger-auto], [data-trigger-form], [data-trigger-minim], [data-trigger-select]')
      .css('display','none')
+   $('[data-selectionlabel] td:first-child')
+     .text(<?php echo $module->escapeJSString($module->tt('selection_label')); ?>)
    $('[data-valuefield] td:first-child')
      .text(<?php echo $module->escapeJSString($module->tt('pack_value_proj_field')); ?>)
    switch ( vVal )
@@ -565,6 +592,8 @@ if ( $canDelete )
        break
      case 'M':
        $('[data-trigger-minim]').css('display','')
+       $('[data-selectionlabel] td:first-child')
+         .text(<?php echo $module->escapeJSString($module->tt('selection_label_rando')); ?>)
        $('[data-valuefield] td:first-child')
          .text(<?php echo $module->escapeJSString($module->tt('pack_value_proj_field_rando')); ?>)
        break
