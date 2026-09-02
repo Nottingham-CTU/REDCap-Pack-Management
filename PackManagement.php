@@ -1479,8 +1479,9 @@ class PackManagement extends \ExternalModules\AbstractExternalModule
 		$sqlParams = [];
 		for ( $i = 0; $i < count( $property ) && $i < count( $value ); $i++ )
 		{
+			// Uses JSON_EXTRACT(?,'$') instead of CAST(? AS JSON) for MariaDB compatibility.
 			$sql .= ',REPLACE(JSON_UNQUOTE(JSON_SEARCH(ems.value,\'one\',?,NULL,' .
-			        '\'$[*].id\')),\'.id\',?),CAST(? AS JSON)';
+			        '\'$[*].id\')),\'.id\',?),JSON_EXTRACT(?,\'$\')';
 			$sqlParams[] = $packID;
 			$sqlParams[] = '.' . $property[$i];
 			$sqlParams[] = json_encode( $value[$i] );
